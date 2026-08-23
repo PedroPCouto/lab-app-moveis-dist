@@ -42,4 +42,15 @@ Documento para respostas das questões descritas no documento README.md
 
  ### 3 Observe os arquivos gerados (target/generated-sources/.../CentralAtendimentoGrpc.java ou central_pb2_grpc.py). Sem entender todo o código gerado, você consegue identificar onde ficam definidas as operações ConsultarHorario e AcompanharAvisos? Cite o nome de pelo menos uma classe ou método gerado que você reconheceu.
 
+ No arquivo python ambos os métodos questionados ficam claros, eles são métodos criado a partir da função `channel.unary_unary` na classe CentralAtendimentoStub e passam a atuar como uma propriedade interna dessa mesma classe.
+
+ ## Parte C
+
+ ### 1 No cliente, a linha stub.consultarHorario(pergunta) (Java) ou stub.ConsultarHorario(...) (Python) parece uma chamada de método comum. Cite, em alto nível, pelo menos três coisas que acontecem “por baixo dos panos” entre essa chamada e o return da função no servidor.
+
+ Parece uma chamada de método comum, onde "parece" é de fato a palavra chave, o que acontece por debaixo dos panos é na verdade um processo de comunicação, (1) onde o cliente envia uma solicitação para o servidor, para a execução remota de uma função dele, passando os dados necessários e então (2) o servidor resolve essa única entrada e retorna em uma única resposta (algo que acontece por ser um RPC unário, ou seja, apenas uma mensagem e uma resposta) e então o canal de comunicação é encerrado.
+
+ ### 2 Compare esta implementação com o ClienteTCP do roteiro anterior. Onde estava, no TCP, o equivalente a “montar a mensagem” e “interpretar a resposta”? Quem faz esse trabalho agora, no gRPC?
+ 
+
  
