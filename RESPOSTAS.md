@@ -28,7 +28,7 @@ Documento para respostas das questões descritas no documento README.md
 
  ### 3 (Responder depois de concluir as Partes C e D) Comparando o cliente TCP do laboratório anterior com o cliente gRPC que você vai construir agora: qual dos dois exige que você “pense em rede” (sockets, send/receive, parsing de string) e qual permite que você “pense no problema” (chamar uma função e receber um resultado)? A que tipo de transparência isso se relaciona?
 
-
+ O cliente TCP exige pensar em rede: abrir o socket, montar a string e fazer o parsing manual da resposta. O cliente gRPC permite pensar no problema, já que basta chamar stub.consultarHorario(pergunta) e receber um objeto pronto. Isso se relaciona diretamente com a transparência de acesso, muito maior no gRPC.
 
  ## Parte B
 
@@ -42,7 +42,7 @@ Documento para respostas das questões descritas no documento README.md
 
  ### 3 Observe os arquivos gerados (target/generated-sources/.../CentralAtendimentoGrpc.java ou central_pb2_grpc.py). Sem entender todo o código gerado, você consegue identificar onde ficam definidas as operações ConsultarHorario e AcompanharAvisos? Cite o nome de pelo menos uma classe ou método gerado que você reconheceu.
 
- No arquivo python ambos os métodos questionados ficam claros, eles são métodos criado a partir da função `channel.unary_unary` na classe CentralAtendimentoStub e passam a atuar como uma propriedade interna dessa mesma classe.
+ No arquivo python ambos os métodos questionados ficam claros, no construtor da classe CentralAtendimentoStub: `ConsultarHorario` é criado a partir de `channel.unary_unary` e `AcompanharAvisos` a partir de `channel.unary_stream`, cada um passando a atuar como uma propriedade interna dessa mesma classe.
 
  ## Parte C
 
@@ -51,6 +51,24 @@ Documento para respostas das questões descritas no documento README.md
  Parece uma chamada de método comum, onde "parece" é de fato a palavra chave, o que acontece por debaixo dos panos é na verdade um processo de comunicação, (1) onde o cliente envia uma solicitação para o servidor, para a execução remota de uma função dele, passando os dados necessários e então (2) o servidor resolve essa única entrada e retorna em uma única resposta (algo que acontece por ser um RPC unário, ou seja, apenas uma mensagem e uma resposta) e então o canal de comunicação é encerrado.
 
  ### 2 Compare esta implementação com o ClienteTCP do roteiro anterior. Onde estava, no TCP, o equivalente a “montar a mensagem” e “interpretar a resposta”? Quem faz esse trabalho agora, no gRPC?
- 
 
- 
+No TCP era o cliente quem realizava esse trabalho por completo, ele mesmo montava a mensagem como texto puro (via println) e também interpretava a resposta lida do socket, sem nenhum parsing formal, apenas texto cru. O TCP, por definição, já mantém os bytes organizados (ordenados), mas não estrutura o conteúdo. No caso do gRPC esse trabalho passa a ser do stub gerado: ele monta a mensagem (serializa o objeto Protobuf) e interpreta a resposta (desserializa), o cliente central só invoca o método e recebe o objeto pronto.
+
+### 3 O que aconteceria se você chamasse stub.consultarHorario(pergunta) com o servidor desligado? Teste e descreva o comportamento observado (em qualquer uma das duas linguagens).
+
+O cliente simplesmente colapsa, a aplicação não estava preparada para não encontrar uma conexão quando a solicitação é enviada.
+
+## Parte D
+
+### 1 No laboratório anterior, o Multicast usava um endereço de grupo (230.0.0.1) para alcançar vários clientes com um único envio; aqui, o streaming gRPC é um servidor conversando com um cliente por vez, só que ao longo de uma conexão só. Se você quisesse que vários clientes gRPC recebessem os mesmos avisos ao mesmo tempo, o que precisaria mudar na implementação do servidor?
+
+O servidor precisaria mudar sim: hoje cada chamada a acompanharAvisos roda seu próprio laço isolado, do zero, para um único StreamObserver. Para vários clientes receberem os mesmos avisos ao mesmo tempo, o servidor precisaria manter uma lista compartilhada (e thread-safe) com os StreamObservers de todos os inscritos, e a cada aviso novo, percorrer essa lista chamando onNext() em cada um, em vez de gerar a sequência de novo por conexão.
+
+### 2 Compare o método de streaming em Java (StreamObserver, chamando onNext() repetidamente) com o de Python (uma função geradora usando yield). Os dois alcançam o mesmo resultado - qual das duas abordagens você achou mais natural de entender? Justifique.
+
+onNext() parece mais natural, pela simplicidade do conceito e o uso de um termo que parece mais próximo, mas de modo geral as duas fazem um processamento "lazy"/sob demanda. Se você tem familiaridade com funções geradoras em python/js entender o yield é simples também.
+
+
+### 3 No método acompanharAvisos/AcompanharAvisos, o que aconteceria se o cliente fechasse a conexão (por exemplo, fechando o terminal) no meio do envio dos 5 avisos? Pesquise ou teste o comportamento e descreva o que observou.
+
+ Nada acontece, pelo menos no meu experimento. Acredito que isso seja justamente em função do processamento por função geradora, os valores foram salvos na memória e estavam sendo requeridos conforme requisitado.
