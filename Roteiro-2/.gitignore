@@ -1,4 +1,3 @@
-@"
 # Java
 *.class
 target/
@@ -12,7 +11,3 @@ venv/
 # Sistema
 Thumbs.db
 desktop.ini
-"@ | Set-Content -Path .gitignore -Encoding utf8
-
-git add .gitignore
-git commit -m "chore: adiciona .gitignore"
