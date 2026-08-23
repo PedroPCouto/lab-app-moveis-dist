@@ -24,14 +24,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcentral.proto\x12\x07\x63\x65ntral\"%\n\x0fPerguntaHorario\x12\x12\n\nnome_aluno\x18\x01 \x01(\t\":\n\x0fRespostaHorario\x12\x15\n\rhorario_atual\x18\x01 \x01(\t\x12\x10\n\x08mensagem\x18\x02 \x01(\t\"%\n\x0fInscricaoAvisos\x12\x12\n\nnome_aluno\x18\x01 \x01(\t\"&\n\x05\x41viso\x12\x0e\n\x06numero\x18\x01 \x01(\x05\x12\r\n\x05texto\x18\x02 \x01(\t2\x9c\x01\n\x12\x43\x65ntralAtendimento\x12\x46\n\x10\x43onsultarHorario\x12\x18.central.PerguntaHorario\x1a\x18.central.RespostaHorario\x12>\n\x10\x41\x63ompanharAvisos\x12\x18.central.InscricaoAvisos\x1a\x0e.central.Aviso0\x01\x42-\n\x1b\x62r.pucminas.labdamd.centralB\x0c\x43\x65ntralProtoP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcentral.proto\x12\x07\x63\x65ntral\"%\n\x0fPerguntaHorario\x12\x12\n\nnome_aluno\x18\x01 \x01(\t\":\n\x0fRespostaHorario\x12\x15\n\rhorario_atual\x18\x01 \x01(\t\x12\x10\n\x08mensagem\x18\x02 \x01(\t\"%\n\x0fInscricaoAvisos\x12\x12\n\nnome_aluno\x18\x01 \x01(\t\"&\n\x05\x41viso\x12\x0e\n\x06numero\x18\x01 \x01(\x05\x12\r\n\x05texto\x18\x02 \x01(\t2\x9c\x01\n\x12\x43\x65ntralAtendimento\x12\x46\n\x10\x43onsultarHorario\x12\x18.central.PerguntaHorario\x1a\x18.central.RespostaHorario\x12>\n\x10\x41\x63ompanharAvisos\x12\x18.central.InscricaoAvisos\x1a\x0e.central.Aviso0\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'central_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n\033br.pucminas.labdamd.centralB\014CentralProtoP\001'
+  DESCRIPTOR._loaded_options = None
   _globals['_PERGUNTAHORARIO']._serialized_start=26
   _globals['_PERGUNTAHORARIO']._serialized_end=63
   _globals['_RESPOSTAHORARIO']._serialized_start=65
