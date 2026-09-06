@@ -1,0 +1,83 @@
+Data/hora desta execucao: Sun Sep  6 10:43:53 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ FUNCIONALIDADE ADICIONAL - historico por conta e status por agencia
+==================================================================
+
+--- GET /contas/0/historico?limite=6  (eventos da conta, do mais recente ao mais antigo) ---
+{
+  "idConta": 0,
+  "agencia": "agencia-0",
+  "total": 6,
+  "eventos": [
+    {
+      "timestampLamport": 8,
+      "tipo": "TRANSFERENCIA_DEBITO",
+      "detalhes": {
+        "idOrigem": 0,
+        "idDestino": 1,
+        "valor": 30,
+        "agenciaDestino": 1,
+        "novoSaldo": 133.00
+      }
+    },
+    {
+      "timestampLamport": 7,
+      "tipo": "TRANSFERENCIA_CREDITO",
+      "detalhes": {
+        "idOrigem": 0,
+        "idDestino": 3,
+        "valor": 40,
+        "novoSaldo": 90.00
+      }
+    },
+    {
+      "timestampLamport": 6,
+      "tipo": "TRANSFERENCIA_DEBITO",
+      "detalhes": {
+        "idOrigem": 0,
+        "idDestino": 3,
+        "valor": 40,
+        "agenciaDestino": 0,
+        "novoSaldo": 163.00
+      }
+    },
+    {
+      "timestampLamport": 5,
+      "tipo": "DEPOSITO",
+      "detalhes": {
+        "id": 0,
+        "valor": 1,
+        "novoSaldo": 203.00
+      }
+    },
+    {
+      "timestampLamport": 4,
+      "tipo": "DEPOSITO",
+      "detalhes": {
+        "id": 0,
+        "valor": 1,
+        "novoSaldo": 202.00
+      }
+    },
+    {
+      "timestampLamport": 3,
+      "tipo": "DEPOSITO",
+      "detalhes": {
+        "id": 0,
+        "valor": 1,
+        "novoSaldo": 201.00
+      }
+    }
+  ]
+}
+
+--- GET /status de cada agencia (rota publica: relogio de Lamport e contas da particao) ---
+{"situacao":"no ar","idAgencia":0,"porta":4000,"numeroAgencias":3,"relogioLamport":9,"quantidadeContas":2,"contas":[0,3],"eventosRegistrados":8,"horaParede":"2026-09-06T13:43:53.154725875Z"}
+{"situacao":"no ar","idAgencia":1,"porta":4001,"numeroAgencias":3,"relogioLamport":10,"quantidadeContas":1,"contas":[1],"eventosRegistrados":5,"horaParede":"2026-09-06T13:43:53.161868649Z"}
+{"situacao":"no ar","idAgencia":2,"porta":4002,"numeroAgencias":3,"relogioLamport":4,"quantidadeContas":1,"contas":[2],"eventosRegistrados":4,"horaParede":"2026-09-06T13:43:53.169525481Z"}
+
+--- O historico tambem exige autorizacao: bruno nao ve a conta da ana ---
+{"erro":"Conta 0 nao pertence ao usuario autenticado."}
+HTTP 403
