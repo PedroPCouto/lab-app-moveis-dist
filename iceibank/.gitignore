@@ -1,0 +1,50 @@
+target/
+agencia/target/
+agencia/.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Tudo em agencia/data e gerado em tempo de execucao (secao 4.1 do roteiro):
+# os logs .jsonl, a saida de console de cada agencia e os PIDs. Quando a
+# evidencia depender deles, o que vai para evidencias/ e o print, nao o arquivo.
+agencia/data/
+
+# Node (frontend, caso venha a usar)
+node_modules/
+
+# STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IntelliJ IDEA
+.idea
+*.iws
+*.iml
+*.ipr
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# VS Code
+.vscode/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Python (scripts auxiliares)
+__pycache__/
+*.pyc
