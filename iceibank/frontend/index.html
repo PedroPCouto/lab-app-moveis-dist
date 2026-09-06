@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICEIBank - Sprint 1</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+<header>
+  <h1>ICEI<span>Bank</span></h1>
+  <div id="identificacao" class="usuario" hidden>
+    <span id="rotuloUsuario"></span>
+    <button id="botaoSair" class="secundario" style="width:auto;margin:0 0 0 10px;padding:4px 12px">Sair</button>
+  </div>
+</header>
+
+<div id="mensagem" role="status" hidden></div>
+
+<main>
+
+  <section id="telaLogin">
+    <div class="cartao entrada">
+      <h2>Entrar</h2>
+      <form id="formularioLogin">
+        <div class="campo">
+          <label for="agenciaLogin">Agencia de entrada</label>
+          <select id="agenciaLogin"></select>
+        </div>
+        <div class="campo">
+          <label for="usuario">Usuario</label>
+          <input id="usuario" name="usuario" autocomplete="username" value="ana" required>
+        </div>
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input id="senha" name="senha" type="password" autocomplete="current-password" value="ana123" required>
+        </div>
+        <button type="submit">Entrar</button>
+      </form>
+      <p class="vazio" style="margin-bottom:0">
+        Usuarios de laboratorio: ana/ana123, bruno/bruno123, carla/carla123.
+      </p>
+    </div>
+  </section>
+
+  <section id="telaApp" hidden>
+    <div class="grade">
+
+      <div class="cartao cartao--largo">
+        <h2>Agencias</h2>
+        <div class="linha" style="align-items:flex-end">
+          <div>
+            <label for="agenciaAtual">Porta de entrada (cada agencia so responde pelas contas dela)</label>
+            <select id="agenciaAtual"></select>
+          </div>
+          <button id="botaoAtualizar" class="secundario" style="flex:0 0 auto;width:auto;padding:9px 16px">
+            Atualizar
+          </button>
+        </div>
+        <div id="pilulasAgencias" class="pilulas" style="margin-top:12px"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>Minhas contas nesta agencia</h2>
+        <table>
+          <thead>
+            <tr><th>Conta</th><th>Titular</th><th style="text-align:right">Saldo</th><th></th></tr>
+          </thead>
+          <tbody id="corpoContas"></tbody>
+        </table>
+        <p id="contasVazias" class="vazio" hidden>
+          Nenhuma conta sua nesta agencia. Lembre-se da particao: a conta N mora na agencia N % 3.
+        </p>
+      </div>
+
+      <div class="cartao">
+        <h2>Abrir conta</h2>
+        <form id="formularioConta">
+          <div class="linha">
+            <div class="campo">
+              <label for="novaContaId">Numero da conta</label>
+              <input id="novaContaId" type="number" min="0" required>
+            </div>
+            <div class="campo">
+              <label for="novaContaSaldo">Saldo inicial</label>
+              <input id="novaContaSaldo" type="number" min="0" step="0.01" value="100">
+            </div>
+          </div>
+          <div class="campo">
+            <label for="novaContaNome">Nome do titular</label>
+            <input id="novaContaNome" placeholder="opcional">
+          </div>
+          <p id="dicaParticao" class="vazio"></p>
+          <button type="submit">Criar conta</button>
+        </form>
+      </div>
+
+      <div class="cartao">
+        <h2>Deposito e saque</h2>
+        <form id="formularioMovimento">
+          <div class="campo">
+            <label for="movimentoConta">Conta</label>
+            <input id="movimentoConta" type="number" min="0" required>
+          </div>
+          <div class="campo">
+            <label for="movimentoValor">Valor</label>
+            <input id="movimentoValor" type="number" min="0.01" step="0.01" required>
+          </div>
+          <div class="linha">
+            <button type="submit" data-operacao="depositar">Depositar</button>
+            <button type="submit" data-operacao="sacar" class="secundario">Sacar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="cartao">
+        <h2>Transferencia</h2>
+        <form id="formularioTransferencia">
+          <div class="linha">
+            <div class="campo">
+              <label for="transferenciaOrigem">Conta de origem</label>
+              <input id="transferenciaOrigem" type="number" min="0" required>
+            </div>
+            <div class="campo">
+              <label for="transferenciaDestino">Conta de destino</label>
+              <input id="transferenciaDestino" type="number" min="0" required>
+            </div>
+          </div>
+          <div class="campo">
+            <label for="transferenciaValor">Valor</label>
+            <input id="transferenciaValor" type="number" min="0.01" step="0.01" required>
+          </div>
+          <p id="dicaTransferencia" class="vazio"></p>
+          <button type="submit">Transferir</button>
+        </form>
+      </div>
+
+      <div class="cartao cartao--largo">
+        <h2>Historico da conta <small class="vazio">(funcionalidade adicional)</small></h2>
+        <form id="formularioHistorico" class="linha" style="align-items:flex-end">
+          <div class="campo" style="margin:0">
+            <label for="historicoConta">Conta</label>
+            <input id="historicoConta" type="number" min="0" required>
+          </div>
+          <button type="submit" style="flex:0 0 auto;width:auto;padding:9px 20px;margin:0">Ver historico</button>
+        </form>
+        <div class="rolagem" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr><th>Lamport</th><th>Agencia</th><th>Evento</th><th>Detalhes</th><th>Hora de parede</th></tr>
+            </thead>
+            <tbody id="corpoHistorico"></tbody>
+          </table>
+        </div>
+        <p id="historicoVazio" class="vazio">Informe uma conta para ver os eventos ja registrados.</p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script src="js/modelo.js"></script>
+<script src="js/visao.js"></script>
+<script src="js/controlador.js"></script>
+</body>
+</html>
