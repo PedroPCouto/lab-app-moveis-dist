@@ -1,0 +1,41 @@
+Data/hora desta execucao: Sun Sep  6 10:45:48 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE E - LINHA DO TEMPO UNIFICADA
+==================================================================
+=== Linha do tempo unificada (ordenada por relogio de Lamport) ===
+[Lamport   1] (2026-09-06T13:43:42.537836950Z) agencia-0 - CRIAR_CONTA                    {"id":0,"nomeAluno":"Ana","dono":"ana","saldoInicial":200.0}   <-- EMPATE
+[Lamport   1] (2026-09-06T13:43:42.614716334Z) agencia-1 - CRIAR_CONTA                    {"id":1,"nomeAluno":"Bruno","dono":"bruno","saldoInicial":80.0}   <-- EMPATE
+[Lamport   1] (2026-09-06T13:43:42.677533369Z) agencia-2 - CRIAR_CONTA                    {"id":2,"nomeAluno":"Carla","dono":"carla","saldoInicial":120.0}   <-- EMPATE
+[Lamport   2] (2026-09-06T13:43:42.556668566Z) agencia-0 - CRIAR_CONTA                    {"id":3,"nomeAluno":"Ana (2a conta)","dono":"ana","saldoInicial":50.0}   <-- EMPATE
+[Lamport   2] (2026-09-06T13:43:42.714621160Z) agencia-1 - DEPOSITO                       {"id":1,"valor":1,"novoSaldo":81.0}   <-- EMPATE
+[Lamport   2] (2026-09-06T13:43:42.715620740Z) agencia-2 - DEPOSITO                       {"id":2,"valor":1,"novoSaldo":121.0}   <-- EMPATE
+[Lamport   3] (2026-09-06T13:43:42.715088401Z) agencia-0 - DEPOSITO                       {"id":0,"valor":1,"novoSaldo":201.0}   <-- EMPATE
+[Lamport   3] (2026-09-06T13:43:42.726463975Z) agencia-1 - DEPOSITO                       {"id":1,"valor":1,"novoSaldo":82.0}   <-- EMPATE
+[Lamport   3] (2026-09-06T13:43:42.728632312Z) agencia-2 - DEPOSITO                       {"id":2,"valor":1,"novoSaldo":122.0}   <-- EMPATE
+[Lamport   4] (2026-09-06T13:43:42.726842717Z) agencia-0 - DEPOSITO                       {"id":0,"valor":1,"novoSaldo":202.0}   <-- EMPATE
+[Lamport   4] (2026-09-06T13:43:42.744610454Z) agencia-1 - DEPOSITO                       {"id":1,"valor":1,"novoSaldo":83.0}   <-- EMPATE
+[Lamport   4] (2026-09-06T13:43:42.742203463Z) agencia-2 - DEPOSITO                       {"id":2,"valor":1,"novoSaldo":123.0}   <-- EMPATE
+[Lamport   5] (2026-09-06T13:43:42.744188499Z) agencia-0 - DEPOSITO                       {"id":0,"valor":1,"novoSaldo":203.0}
+[Lamport   6] (2026-09-06T13:43:42.897889983Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":3,"valor":40,"agenciaDestino":0,"novoSaldo":163.0}
+[Lamport   7] (2026-09-06T13:43:42.898250385Z) agencia-0 - TRANSFERENCIA_CREDITO          {"idOrigem":0,"idDestino":3,"valor":40,"novoSaldo":90.0}
+[Lamport   8] (2026-09-06T13:43:43.092883126Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":1,"valor":30,"agenciaDestino":1,"novoSaldo":133.0}
+[Lamport  10] (2026-09-06T13:44:40.142495581Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":1,"valor":25,"agenciaDestino":1,"novoSaldo":108.0}   <-- EMPATE
+[Lamport  10] (2026-09-06T13:43:43.133627192Z) agencia-1 - TRANSFERENCIA_CREDITO_REMOTO   {"idConta":1,"valor":30,"origemAgencia":0,"timestampRecebido":9,"novoSaldo":113.0}   <-- EMPATE
+[Lamport  12] (2026-09-06T13:44:41.770728119Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":3,"valor":15,"agenciaDestino":0,"novoSaldo":93.0}   <-- EMPATE
+[Lamport  12] (2026-09-06T13:44:40.147552370Z) agencia-1 - TRANSFERENCIA_CREDITO_REMOTO   {"idConta":1,"valor":25,"origemAgencia":0,"timestampRecebido":11,"novoSaldo":138.0}   <-- EMPATE
+[Lamport  13] (2026-09-06T13:44:41.771153141Z) agencia-0 - TRANSFERENCIA_CREDITO          {"idOrigem":0,"idDestino":3,"valor":15,"novoSaldo":105.0}
+[Lamport  14] (2026-09-06T13:45:07.538759182Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":1,"valor":25,"agenciaDestino":1,"novoSaldo":68.0}
+[Lamport  16] (2026-09-06T13:45:09.153389604Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":3,"valor":15,"agenciaDestino":0,"novoSaldo":53.0}   <-- EMPATE
+[Lamport  16] (2026-09-06T13:45:07.544826090Z) agencia-1 - TRANSFERENCIA_CREDITO_REMOTO   {"idConta":1,"valor":25,"origemAgencia":0,"timestampRecebido":15,"novoSaldo":163.0}   <-- EMPATE
+[Lamport  17] (2026-09-06T13:45:09.153874274Z) agencia-0 - TRANSFERENCIA_CREDITO          {"idOrigem":0,"idDestino":3,"valor":15,"novoSaldo":120.0}
+[Lamport  18] (2026-09-06T13:45:29.073003232Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":1,"valor":10,"agenciaDestino":1,"novoSaldo":43.0}
+[Lamport  20] (2026-09-06T13:45:29.074669726Z) agencia-0 - TRANSFERENCIA_FALHOU           {"idOrigem":0,"idDestino":1,"valor":10,"agenciaDestino":1,"erro":"I/O error on POST request for \"http://localhost:4001/contas/1/creditar-remoto\": Connection refused (connect failed)","inconsistencia":"debito aplicado sem credito correspondente"}
+[Lamport  21] (2026-09-06T13:45:40.437822660Z) agencia-0 - TRANSFERENCIA_DEBITO           {"idOrigem":0,"idDestino":1,"valor":5,"agenciaDestino":1,"novoSaldo":38.0}
+[Lamport  23] (2026-09-06T13:45:40.439430313Z) agencia-0 - TRANSFERENCIA_FALHOU           {"idOrigem":0,"idDestino":1,"valor":5,"agenciaDestino":1,"erro":"I/O error on POST request for \"http://localhost:4001/contas/1/creditar-remoto\": Connection refused (connect failed)","inconsistencia":"debito aplicado sem credito correspondente"}
+
+=== Resumo ===
+Eventos no total .................. 29
+Maior timestamp de Lamport ........ 23
+Eventos empatados entre agencias .. 18  (o relogio de Lamport nao os ordena entre si)
