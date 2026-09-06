@@ -1,0 +1,29 @@
+Data/hora desta execucao: Sun Sep  6 10:43:41 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PREPARACAO - contas de exemplo (particao: conta N mora na agencia N % 3)
+==================================================================
+
+--- Conta 0 -> agencia 0 (dona: ana) ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":200.00}
+HTTP 201
+
+--- Conta 3 -> agencia 0 tambem, porque 3 % 3 == 0 (dona: ana) ---
+{"id":3,"nomeAluno":"Ana (2a conta)","dono":"ana","saldo":50.00}
+HTTP 201
+
+--- Conta 1 -> agencia 1 (dono: bruno) ---
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":80.00}
+HTTP 201
+
+--- Conta 2 -> agencia 2 (dona: carla) ---
+{"id":2,"nomeAluno":"Carla","dono":"carla","saldo":120.00}
+HTTP 201
+
+--- Conta 1 na agencia 0: recusada, nao e a particao dela ---
+{"erro":"Conta 1 nao pertence a esta agencia. Responsavel: agencia 1."}
+HTTP 400
+
+--- Eventos concorrentes nas 3 agencias (para gerar empates de Lamport) ---
+  9 depositos disparados (3 por agencia, praticamente ao mesmo tempo).
