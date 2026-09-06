@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: iceibank-agencia
+  jackson:
+    default-property-inclusion: non_null
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level %-30logger{0} : %msg%n"
+  level:
+    br.com.pucminas.iceibank: INFO
+
+iceibank:
+  offset: ${OFFSET:0}
+  agencia-id: ${AGENCIA_ID:0}
+
+  jwt:
+    segredo: ${JWT_SEGREDO:iceibank-sprint1-chave-de-laboratorio-nao-use-em-producao}
+    expiracao: 30m
+    expiracao-interna: 60s
+
+  usuarios:
+    - usuario: ana
+      nome: Ana
+      senha-hash: e82827b00b2ca8620beb37f879778c082b292a52270390cff35b6fe3157f4e8b
+    - usuario: bruno
+      nome: Bruno
+      senha-hash: 956cd9e97c44cbb5c9f18ccf258bb3ea0fbac91d027d2ac9489185f531478242
+    - usuario: carla
+      nome: Carla
+      senha-hash: e408145e7fc3f031d5aa3b08710d0eddabf61cb11864822af9b16b92c0c9c576
