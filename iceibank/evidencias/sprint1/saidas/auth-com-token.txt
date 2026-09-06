@@ -1,0 +1,32 @@
+Data/hora desta execucao: Sun Sep  6 10:46:33 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE F - CENARIO (b): requisicao COM token valido
+==================================================================
+
+--- POST /auth/login ---
+{"token":"eyJhbGciOiJIUzM4NCJ9.eyJpc3MiOiJhZ2VuY2lhLTAiLCJzdWIiOiJhbmEiLCJub21lIjoiQW5hIiwidGlwbyI6IkNMSUVOVEUiLCJpYXQiOjE3ODg3MDIzOTMsImV4cCI6MTc4ODcwNDE5M30.f-ZE1X4FyhwCXXmgoFdtPmvg1ODIueFxGrlPIQT4VGljfINukyVKcp0_OBmmHQ6Z","tipo":"Bearer","expiraEmSegundos":1800,"usuario":"ana","nome":"Ana","agencia":0}
+HTTP 200
+
+--- Conteudo do token (payload em base64url, sem a assinatura) ---
+{
+  "iss": "agencia-0",
+  "sub": "ana",
+  "nome": "Ana",
+  "tipo": "CLIENTE",
+  "iat": 1788702393,
+  "exp": 1788704193
+}
+
+--- GET /contas/0 com o token ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":38.00}
+HTTP 200
+
+--- POST /contas/0/depositar com o token ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":48.00}
+HTTP 200
+
+--- Senha errada nao emite token ---
+{"erro":"Usuario ou senha invalidos."}
+HTTP 401

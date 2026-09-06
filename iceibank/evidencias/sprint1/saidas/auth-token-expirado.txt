@@ -1,0 +1,31 @@
+Data/hora desta execucao: Sun Sep  6 10:46:33 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE F - CENARIO (c): requisicao com token EXPIRADO
+==================================================================
+
+--- Gerando um token assinado corretamente, porem ja vencido ---
+  token: eyJhbGciOiJIUzM4NCJ9.eyJpc3MiOiJhZ2VuY2lhLTAiLCJzdWIiOiJhbmE...
+
+--- Payload do token (repare no exp anterior ao iat da execucao atual) ---
+{
+  "iss": "agencia-0",
+  "sub": "ana",
+  "tipo": "CLIENTE",
+  "iat": 1788696995,
+  "exp": 1788698795
+}
+  agora (epoch): 1788702395
+
+--- GET /contas/0 com o token expirado ---
+{"erro":"Token expirado. Faca login novamente."}
+HTTP 401
+
+--- Token adulterado (assinatura nao confere) - tambem 401 ---
+{"erro":"Token invalido."}
+HTTP 401
+
+--- Token de pessoa na rota interna entre agencias - 403, nao 401 ---
+{"erro":"Esta rota so aceita chamadas internas entre agencias."}
+HTTP 403

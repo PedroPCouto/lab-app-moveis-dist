@@ -1,0 +1,24 @@
+Data/hora desta execucao: Sun Sep  6 10:46:33 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE F - CENARIO (a): requisicao SEM token
+==================================================================
+
+--- GET /contas/0 sem o cabecalho Authorization ---
+{"erro":"Token ausente. Envie o cabecalho Authorization: Bearer <token>."}
+HTTP 401
+
+--- POST /contas/0/sacar sem token ---
+{"erro":"Token ausente. Envie o cabecalho Authorization: Bearer <token>."}
+HTTP 401
+
+--- POST /transferencias sem token ---
+{"erro":"Token ausente. Envie o cabecalho Authorization: Bearer <token>."}
+HTTP 401
+
+  >>> Toda rota que le ou modifica contas responde 401 sem token.
+
+--- A rota publica de health-check continua acessivel (nao mexe em conta) ---
+{"situacao":"no ar","idAgencia":0,"porta":4000,"numeroAgencias":3,"relogioLamport":23,"quantidadeContas":2,"contas":[0,3],"eventosRegistrados":18,"horaParede":"2026-09-06T13:46:33.147601792Z"}
+HTTP 200
