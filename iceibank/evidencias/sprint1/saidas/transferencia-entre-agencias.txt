@@ -1,0 +1,32 @@
+Data/hora desta execucao: Sun Sep  6 10:43:43 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE D - TRANSFERENCIA ENTRE AGENCIAS (conta 0 na ag.0 -> conta 1 na ag.1)
+==================================================================
+
+--- Relogio de Lamport de cada agencia ANTES ---
+{"agencia":0,"lamport":7}
+{"agencia":1,"lamport":4}
+
+--- Transferindo R$ 30,00 da conta 0 para a conta 1 ---
+{"mensagem":"Transferencia concluida (entre agencias).","escopo":"ENTRE_AGENCIAS","idOrigem":0,"idDestino":1,"valor":30,"saldoOrigem":133.00,"agenciaDestino":1,"timestampLamport":9}
+HTTP 200
+
+--- Saldo na agencia de origem (conta 0) ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":133.00}
+HTTP 200
+
+--- Saldo na agencia de destino (conta 1) ---
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":113.00}
+HTTP 200
+
+--- Relogio de Lamport de cada agencia DEPOIS (regra 3: max(local, recebido) + 1) ---
+{"agencia":0,"lamport":9}
+{"agencia":1,"lamport":10}
+
+--- Log da agencia 0 (lado do ENVIO) ---
+{"agencia":"agencia-0","tipo":"TRANSFERENCIA_DEBITO","timestampLamport":8,"horaParede":"2026-09-06T13:43:43.092883126Z","detalhes":{"idOrigem":0,"idDestino":1,"valor":30,"agenciaDestino":1,"novoSaldo":133.00}}
+
+--- Log da agencia 1 (lado do RECEBIMENTO) ---
+{"agencia":"agencia-1","tipo":"TRANSFERENCIA_CREDITO_REMOTO","timestampLamport":10,"horaParede":"2026-09-06T13:43:43.133627192Z","detalhes":{"idConta":1,"valor":30,"origemAgencia":0,"timestampRecebido":9,"novoSaldo":113.00}}

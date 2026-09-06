@@ -1,0 +1,41 @@
+Data/hora desta execucao: Sun Sep  6 10:45:26 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE D - FALHA CONHECIDA (agencia de destino fora do ar)
+==================================================================
+
+--- Saldo da conta 0 ANTES ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":53.00}
+HTTP 200
+
+--- Derrubando a agencia 1, que e a dona da conta de destino ---
+Agencia 1 derrubada (porta 4001, pid 40790).
+  GET agencia 1 /status -> HTTP 000  (000 = fora do ar)
+
+--- Tentando transferir R$ 10,00 da conta 0 para a conta 1 ---
+{"erro":"Falha ao contatar agencia de destino. Debito ja aplicado - inconsistencia conhecida (ver Sprint 4)."}
+HTTP 502
+
+--- Saldo da conta 0 DEPOIS do erro ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":43.00}
+HTTP 200
+
+  >>> O debito NAO foi revertido: o dinheiro sumiu temporariamente.
+  >>> Limitacao conhecida e proposital deste sprint (Sprint 4 resolve com 2PC/Saga).
+
+--- Inconsistencia registrada no log da agencia 0 ---
+{
+  "agencia": "agencia-0",
+  "tipo": "TRANSFERENCIA_FALHOU",
+  "timestampLamport": 20,
+  "horaParede": "2026-09-06T13:45:29.074669726Z",
+  "detalhes": {
+    "idOrigem": 0,
+    "idDestino": 1,
+    "valor": 10,
+    "agenciaDestino": 1,
+    "erro": "I/O error on POST request for \"http://localhost:4001/contas/1/creditar-remoto\": Connection refused (connect failed)",
+    "inconsistencia": "debito aplicado sem credito correspondente"
+  }
+}

@@ -1,0 +1,22 @@
+Data/hora desta execucao: Sun Sep  6 10:43:42 AM -03 2026
+Maquina: PedroPC   Usuario: pedro
+
+==================================================================
+ PARTE D - TRANSFERENCIA LOCAL (conta 0 -> conta 3, ambas na agencia 0)
+==================================================================
+
+--- Saldos antes ---
+[{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":203.00},{"id":3,"nomeAluno":"Ana (2a conta)","dono":"ana","saldo":50.00}]
+HTTP 200
+
+--- Transferindo R$ 40,00 ---
+{"mensagem":"Transferencia concluida (mesma agencia).","escopo":"LOCAL","idOrigem":0,"idDestino":3,"valor":40,"saldoOrigem":163.00,"agenciaDestino":0,"timestampLamport":7}
+HTTP 200
+
+--- Saldos depois ---
+[{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":163.00},{"id":3,"nomeAluno":"Ana (2a conta)","dono":"ana","saldo":90.00}]
+HTTP 200
+
+--- Eventos gravados pela agencia 0 (dois eventos LOCAIS do relogio de Lamport) ---
+{"tipo":"TRANSFERENCIA_DEBITO","timestampLamport":6,"detalhes":{"idOrigem":0,"idDestino":3,"valor":40,"agenciaDestino":0,"novoSaldo":163.00}}
+{"tipo":"TRANSFERENCIA_CREDITO","timestampLamport":7,"detalhes":{"idOrigem":0,"idDestino":3,"valor":40,"novoSaldo":90.00}}
