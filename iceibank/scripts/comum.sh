@@ -9,6 +9,11 @@ PID_DIR="$AGENCIA_DIR/data/.pids"
 OFFSET="${OFFSET:-0}"
 NUMERO_AGENCIAS=3
 
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) WINDOWS=sim ;;
+  *)                    WINDOWS=nao ;;
+esac
+
 JAVA_MINIMO=25
 
 versao_major_do_java() {
