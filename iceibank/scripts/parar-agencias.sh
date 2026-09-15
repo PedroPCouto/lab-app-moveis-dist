@@ -9,7 +9,19 @@ pid_na_porta() {
   if [ -z "$pid" ] && command -v lsof >/dev/null; then
     pid=$(lsof -ti "tcp:$porta" -sTCP:LISTEN 2>/dev/null | head -1)
   fi
+  if [ -z "$pid" ] && [ "$WINDOWS" = sim ]; then
+    pid=$(netstat -ano 2>/dev/null | grep -i LISTENING | grep -E "[:.]$porta[[:space:]]" \
+            | awk '{print $NF}' | head -1)
+  fi
   echo "$pid"
+}
+
+derrubar() {
+  if [ "$WINDOWS" = sim ]; then
+    taskkill //PID "$1" //F >/dev/null 2>&1
+  else
+    kill "$1" 2>/dev/null
+  fi
 }
 
 alvos=("$@")
@@ -20,7 +32,7 @@ for id in "${alvos[@]}"; do
   pid=$(pid_na_porta "$porta")
 
   if [ -n "$pid" ]; then
-    kill "$pid" 2>/dev/null && echo "Agencia $id derrubada (porta $porta, pid $pid)."
+    derrubar "$pid" && echo "Agencia $id derrubada (porta $porta, pid $pid)."
   else
     echo "Agencia $id nao esta escutando na porta $porta."
   fi
