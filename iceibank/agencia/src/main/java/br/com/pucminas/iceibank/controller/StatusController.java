@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.pucminas.iceibank.config.AgenciaConfig;
 import br.com.pucminas.iceibank.dto.StatusResponse;
 import br.com.pucminas.iceibank.service.ContaService;
+import br.com.pucminas.iceibank.service.Mensageria;
 import br.com.pucminas.iceibank.service.RegistroEventos;
 import br.com.pucminas.iceibank.service.RelogioVetorial;
 
@@ -17,13 +18,15 @@ public class StatusController {
     private final RelogioVetorial relogio;
     private final ContaService contaService;
     private final RegistroEventos registro;
+    private final Mensageria mensageria;
 
     public StatusController(AgenciaConfig config, RelogioVetorial relogio, ContaService contaService,
-                            RegistroEventos registro) {
+                            RegistroEventos registro, Mensageria mensageria) {
         this.config = config;
         this.relogio = relogio;
         this.contaService = contaService;
         this.registro = registro;
+        this.mensageria = mensageria;
     }
 
     @GetMapping("/status")
@@ -37,6 +40,7 @@ public class StatusController {
                 contaService.quantidade(),
                 contaService.idsDasContas(),
                 registro.eventos().size(),
+                mensageria.mensagensPorFila(),
                 Instant.now().toString());
     }
 }

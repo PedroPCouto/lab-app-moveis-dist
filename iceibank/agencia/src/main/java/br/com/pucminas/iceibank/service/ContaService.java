@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
@@ -49,11 +50,11 @@ public class ContaService {
     }
 
     public Conta buscar(int id) {
-        Conta conta = contas.get(id);
-        if (conta == null) {
-            throw ApiException.naoEncontrado("Conta nao encontrada nesta agencia.");
-        }
-        return conta;
+        return procurar(id).orElseThrow(() -> ApiException.naoEncontrado("Conta nao encontrada nesta agencia."));
+    }
+
+    public Optional<Conta> procurar(int id) {
+        return Optional.ofNullable(contas.get(id));
     }
 
     public Conta buscarDoUsuario(int id, Autenticacao auth) {

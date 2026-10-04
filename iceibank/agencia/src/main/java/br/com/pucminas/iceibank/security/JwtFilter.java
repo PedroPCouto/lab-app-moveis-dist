@@ -26,8 +26,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final List<String> ROTAS_PUBLICAS = List.of("/auth/login", "/status", "/error");
 
-    private static final String ROTA_INTERNA = "/creditar-remoto";
-
     private final JwtService jwtService;
     private final ObjectMapper mapper;
 
@@ -50,7 +48,7 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             Autenticacao autenticacao = jwtService.validar(extrairToken(request));
-            verificarTipoPermitido(request, autenticacao);
+            verificarTipoPermitido(autenticacao);
             request.setAttribute(Autenticacao.ATRIBUTO, autenticacao);
         } catch (ApiException e) {
             responder(response, e);
@@ -68,13 +66,11 @@ public class JwtFilter extends OncePerRequestFilter {
         return cabecalho.substring(PREFIXO.length()).trim();
     }
 
-    private void verificarTipoPermitido(HttpServletRequest request, Autenticacao autenticacao) {
-        boolean rotaInterna = request.getRequestURI().endsWith(ROTA_INTERNA);
-        if (rotaInterna && !autenticacao.ehSistema()) {
-            throw ApiException.proibido("Esta rota so aceita chamadas internas entre agencias.");
-        }
-        if (!rotaInterna && !autenticacao.ehCliente()) {
-            throw ApiException.proibido("Token de sistema nao pode operar contas diretamente.");
+    // Sprint 2: a rota interna /contas/{id}/creditar-remoto deixou de existir (o credito
+    // remoto chega pelo RabbitMQ), entao toda rota protegida e de cliente.
+    private void verificarTipoPermitido(Autenticacao autenticacao) {
+        if (!autenticacao.ehCliente()) {
+            throw ApiException.proibido("Somente tokens de cliente podem operar contas.");
         }
     }
 

@@ -158,7 +158,8 @@
         var rotulo = resultado.escopo === 'LOCAL'
           ? 'TRANSFERENCIA LOCAL (mesma agencia ' + resultado.agenciaDestino + ')'
           : 'TRANSFERENCIA ENTRE AGENCIAS (agencia ' + Modelo.estado.idAgencia
-            + ' -> agencia ' + resultado.agenciaDestino + ')';
+            + ' -> agencia ' + resultado.agenciaDestino + ') publicada no RabbitMQ:'
+            + ' o credito e aplicado de forma assincrona pela agencia de destino';
         Visao.mostrarMensagem('ok', rotulo + '\n'
           + Visao.moeda(resultado.valor) + ' da conta ' + resultado.idOrigem
           + ' para a conta ' + resultado.idDestino + '.\n'

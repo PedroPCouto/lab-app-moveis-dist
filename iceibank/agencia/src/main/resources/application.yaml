@@ -4,6 +4,19 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  # Sprint 2: a URL AMQP da instancia CloudAMQP (amqps://usuario:senha@host/vhost)
+  # vem SEMPRE da variavel de ambiente RABBITMQ_URL - nunca fica no repositorio.
+  # IceibankApplication recusa subir sem ela.
+  rabbitmq:
+    addresses: ${RABBITMQ_URL:amqp://localhost}
+    # O broker confirma (publisher confirm) que gravou a mensagem antes de a
+    # transferencia responder 200 - ver TransferenciaService.
+    publisher-confirm-type: simple
+    listener:
+      simple:
+        # Excecao no consumidor nao devolve a mensagem para a fila em loop infinito.
+        default-requeue-rejected: false
+
 logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %-5level %-30logger{0} : %msg%n"
@@ -17,7 +30,6 @@ iceibank:
   jwt:
     segredo: ${JWT_SEGREDO:iceibank-sprint1-chave-de-laboratorio-nao-use-em-producao}
     expiracao: 30m
-    expiracao-interna: 60s
 
   usuarios:
     - usuario: ana

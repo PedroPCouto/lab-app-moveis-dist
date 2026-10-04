@@ -6,9 +6,11 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +43,13 @@ public class TratadorDeErros {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> tratarInesperado(Exception e) {
+        // Rota inexistente, metodo nao suportado etc.: o proprio Spring ja sabe o status
+        // certo (404, 405...). Sem isto, POST na antiga /creditar-remoto virava 500.
+        if (e instanceof ErrorResponse resposta) {
+            HttpStatusCode codigo = resposta.getStatusCode();
+            String detalhe = resposta.getBody().getDetail();
+            return ResponseEntity.status(codigo).body(Map.of("erro", detalhe != null ? detalhe : e.getMessage()));
+        }
         log.error("Erro inesperado", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("erro", "Erro interno da agencia: " + e.getMessage()));

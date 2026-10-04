@@ -21,7 +21,7 @@ class JwtServiceTest {
 
     private JwtService servico(Duration expiracao) {
         var propriedades = new IceibankProperties(0, 0, "data",
-                new IceibankProperties.Jwt(IceibankProperties.SEGREDO_PADRAO, expiracao, Duration.ofSeconds(60)),
+                new IceibankProperties.Jwt(IceibankProperties.SEGREDO_PADRAO, expiracao),
                 List.of());
         return new JwtService(propriedades, new AgenciaConfig(propriedades));
     }
@@ -34,13 +34,6 @@ class JwtServiceTest {
         assertThat(autenticacao.sujeito()).isEqualTo("ana");
         assertThat(autenticacao.tipo()).isEqualTo(TipoToken.CLIENTE);
         assertThat(autenticacao.ehCliente()).isTrue();
-    }
-
-    @Test
-    void tokenInternoVemMarcadoComoSistema() {
-        JwtService jwt = servico(Duration.ofMinutes(30));
-
-        assertThat(jwt.validar(jwt.gerarTokenInterno()).ehSistema()).isTrue();
     }
 
     @Test
@@ -66,7 +59,7 @@ class JwtServiceTest {
     void tokenAssinadoComOutraChaveERejeitado() {
         var outrasPropriedades = new IceibankProperties(0, 0, "data",
                 new IceibankProperties.Jwt("uma-chave-completamente-diferente-com-32-bytes",
-                        Duration.ofMinutes(30), Duration.ofSeconds(60)),
+                        Duration.ofMinutes(30)),
                 List.of());
         String tokenIntruso = new JwtService(outrasPropriedades, new AgenciaConfig(outrasPropriedades))
                 .gerarTokenCliente(ANA);

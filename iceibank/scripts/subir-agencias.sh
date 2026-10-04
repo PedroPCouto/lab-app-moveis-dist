@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE[0]}")/comum.sh"
 
+if [ -z "${RABBITMQ_URL:-}" ]; then
+  echo "Defina RABBITMQ_URL com a AMQP URL da sua instancia CloudAMQP antes de subir as agencias:" >&2
+  echo "  export RABBITMQ_URL=\"amqps://usuario:senha@host.cloudamqp.com/vhost\"" >&2
+  exit 1
+fi
+
 [ "${1:-}" = "--limpar-logs" ] && rm -f "$AGENCIA_DIR"/data/*.jsonl
 
 mkdir -p "$PID_DIR"
@@ -40,6 +46,6 @@ echo
 
 for id in $(seq 0 $((NUMERO_AGENCIAS - 1))); do
   curl -s "$(url_da_agencia "$id")/status" \
-    | jq -c '{agencia: .idAgencia, porta, lamport: .relogioLamport, contas: .quantidadeContas}' \
+    | jq -c '{agencia: .idAgencia, porta, vetor: .relogioVetorial, contas: .quantidadeContas, filas}' \
     || echo "Agencia $id NAO subiu - veja $AGENCIA_DIR/data/agencia-$id.out"
 done

@@ -12,7 +12,7 @@
 	<artifactId>iceibank</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>iceibank-agencia</name>
-	<description>Agencia do ICEIBank - Sprint 1 (REST/MVC + Relogio de Lamport + JWT)</description>
+	<description>Agencia do ICEIBank - Sprint 2 (REST/MVC + JWT + mensageria RabbitMQ + relogio vetorial)</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -38,6 +38,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- Sprint 2: mensageria (RabbitMQ). Spring AMQP no lugar do cliente cru
+		     com.rabbitmq.client - integra com o resto da aplicacao Spring (secao 9.2). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 
 		<!-- JWT (Parte F). A escolha da biblioteca faz parte da tarefa: jjwt e a

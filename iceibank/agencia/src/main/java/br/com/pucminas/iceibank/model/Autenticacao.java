@@ -6,8 +6,4 @@ public record Autenticacao(String sujeito, String nome, TipoToken tipo) {
     public boolean ehCliente() {
         return tipo == TipoToken.CLIENTE;
     }
-
-    public boolean ehSistema() {
-        return tipo == TipoToken.SISTEMA;
-    }
 }

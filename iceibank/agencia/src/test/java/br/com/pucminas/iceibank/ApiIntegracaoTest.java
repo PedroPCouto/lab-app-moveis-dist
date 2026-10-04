@@ -20,7 +20,8 @@ import com.jayway.jsonpath.JsonPath;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "iceibank.agencia-id=0",
-        "iceibank.pasta-dados=${java.io.tmpdir}/iceibank-testes"
+        "iceibank.pasta-dados=${java.io.tmpdir}/iceibank-testes",
+        "spring.rabbitmq.listener.simple.auto-startup=false"
 })
 class ApiIntegracaoTest {
     @Autowired
@@ -101,18 +102,19 @@ class ApiIntegracaoTest {
     }
 
     @Test
-    void tokenDeClienteNaoAcessaRotaInterna() throws Exception {
+    void rotaDeCreditoRemotoDoSprint1DeixouDeExistir() throws Exception {
         String token = autenticar("ana", "ana123");
 
         mockMvc.perform(post("/contas/0/creditar-remoto")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"valor\":10,\"vetorEnvio\":[0,5,0],\"origemAgencia\":1}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erro").exists());
     }
 
     @Test
-    void rotaInternaSemTokenRetorna401() throws Exception {
+    void rotaInexistenteSemTokenTambemRetorna401() throws Exception {
         mockMvc.perform(post("/contas/0/creditar-remoto")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"valor\":10,\"vetorEnvio\":[0,5,0],\"origemAgencia\":1}"))
