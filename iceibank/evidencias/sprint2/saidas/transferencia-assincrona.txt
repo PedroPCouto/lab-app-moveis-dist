@@ -1,0 +1,29 @@
+Data/hora desta execucao: Sun Oct  4 09:49:27     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ PARTE C - TRANSFERENCIA ENTRE AGENCIAS VIA RABBITMQ (conta 0 na ag.0 -> conta 1 na ag.1)
+==================================================================
+
+--- Estado das duas agencias ANTES ---
+{"agencia":0,"vetor":[5,0,0],"contas":[0,3],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+{"agencia":1,"vetor":[0,2,0],"contas":[1],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+
+--- Transferindo R$ 30,00 da conta 0 para a conta 1 (a agencia 0 so PUBLICA a mensagem) ---
+{"mensagem":"Transferencia publicada para a agencia de destino (entrega assincrona).","escopo":"ENTRE_AGENCIAS","idOrigem":0,"idDestino":1,"valor":30,"saldoOrigem":130.00,"agenciaDestino":1,"timestampVetorial":[7,0,0],"idTransferencia":"4d20eb0b-c3c6-4a06-90b1-54a22a96b6a8"}
+HTTP 200
+
+--- Log da agencia 0 (origem): debito e envio - a mensagem leva o vetor do envio ---
+  [agencia-0] 09:49:32.218 [Vetor [6, 0, 0]] TRANSFERENCIA_DEBITO {idTransferencia=4d20eb0b-c3c6-4a06-90b1-54a22a96b6a8, idOrigem=0, idDestino=1, valor=30, agenciaDestino=1, novoSaldo=130.00}
+  [agencia-0] 09:49:32.614 [Vetor [7, 0, 0]] TRANSFERENCIA_ENVIADA {idTransferencia=4d20eb0b-c3c6-4a06-90b1-54a22a96b6a8, idOrigem=0, idDestino=1, valor=30, agenciaDestino=1, routingKey=agencia.1.creditar}
+
+--- Log da agencia 1 (destino): consumo assincrono da fila-agencia-1 ---
+  [agencia-1] 09:49:32.628 [Vetor [7, 3, 0]] TRANSFERENCIA_CREDITO_REMOTO {idTransferencia=4d20eb0b-c3c6-4a06-90b1-54a22a96b6a8, idConta=1, valor=30, origemAgencia=0, vetorRecebido=[7, 0, 0], novoSaldo=115.00}
+
+--- Saldo na agencia de destino (conta 1) depois do consumo ---
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":115.00}
+HTTP 200
+
+--- Estado das duas agencias DEPOIS (regra 3: max posicao a posicao, +1 na propria) ---
+{"agencia":0,"vetor":[7,0,0],"contas":[0,3],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+{"agencia":1,"vetor":[7,3,0],"contas":[1],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}

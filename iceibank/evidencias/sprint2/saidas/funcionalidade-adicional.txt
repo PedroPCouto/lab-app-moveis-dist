@@ -1,0 +1,29 @@
+Data/hora desta execucao: Sun Oct  4 09:50:48     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ FUNCIONALIDADE ADICIONAL - DEAD-LETTER QUEUE (continuacao da resiliencia)
+==================================================================
+
+--- O credito que nao achou a conta 1 nao foi descartado: esta na fila de mortas da agencia 1 ---
+{"agencia":1,"vetor":[9,4,0],"contas":[],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":1,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+
+--- Recriando a conta 1 na agencia 1 (bruno, saldo inicial 0) ---
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":0.00}
+HTTP 201
+
+--- Reprocessando as mensagens mortas da agencia 1 ---
+{"solicitadoPor":"bruno","mensagem":"Mensagens mortas devolvidas para a fila desta agencia.","reprocessadas":1}
+HTTP 200
+
+--- Log da agencia 1: a mensagem volta para a fila e agora o credito e aplicado ---
+  [agencia-1] 09:50:51.277 [Vetor [9, 5, 0]] CRIAR_CONTA {id=1, nomeAluno=Bruno, dono=bruno, saldoInicial=0.00}
+  [agencia-1] 09:50:52.464 [Vetor [9, 6, 0]] TRANSFERENCIA_CREDITO_REMOTO {idTransferencia=614b73c3-af66-44f9-8eaf-678ad632fee7, idConta=1, valor=10, origemAgencia=0, vetorRecebido=[9, 0, 0], novoSaldo=10.00}
+  [agencia-1] 09:50:52.465 [Vetor [9, 7, 0]] MENSAGENS_MORTAS_REPROCESSADAS {fila=fila-agencia-1.mortas, quantidade=1}
+
+--- Saldo da conta 1: os R$ 10,00 da transferencia feita com a agencia fora do ar chegaram ---
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":10.00}
+HTTP 200
+
+--- Filas depois do reprocessamento ---
+{"agencia":1,"vetor":[9,7,0],"contas":[1],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}

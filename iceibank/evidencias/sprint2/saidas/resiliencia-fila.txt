@@ -1,0 +1,38 @@
+Data/hora desta execucao: Sun Oct  4 09:49:54     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ PARTE C - RESILIENCIA: AGENCIA DE DESTINO FORA DO AR
+==================================================================
+
+--- A agencia 1 esta no ar e tem a conta 1 ---
+{"agencia":1,"vetor":[7,3,0],"contas":[1],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+{"id":1,"nomeAluno":"Bruno","dono":"bruno","saldo":115.00}
+HTTP 200
+
+--- Derrubando a agencia 1 (equivale a fechar o terminal dela) ---
+Agencia 1 derrubada (porta 4001, pid 9132).
+  GET agencia 1 /status -> HTTP 000  (000 = fora do ar)
+
+--- Transferindo R$ 10,00 da conta 0 para a conta 1 COM A AGENCIA 1 FORA DO AR ---
+{"mensagem":"Transferencia publicada para a agencia de destino (entrega assincrona).","escopo":"ENTRE_AGENCIAS","idOrigem":0,"idDestino":1,"valor":10,"saldoOrigem":120.00,"agenciaDestino":1,"timestampVetorial":[9,0,0],"idTransferencia":"614b73c3-af66-44f9-8eaf-678ad632fee7"}
+HTTP 200
+
+--- Ninguem consumiu: a mensagem esta retida na fila duravel da agencia 1 (visto pela agencia 0) ---
+{"agencia":0,"vetor":[9,0,0],"contas":[0,3],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":1,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+
+--- Subindo a agencia 1 de novo (processo novo: as contas em memoria se perderam) ---
+
+--- Log da agencia 1 ao reconectar no RabbitMQ ---
+  [agencia-1] 09:50:23.810 [Vetor [9, 4, 0]] CREDITO_REMOTO_FALHOU {idTransferencia=614b73c3-af66-44f9-8eaf-678ad632fee7, idConta=1, valor=10, origemAgencia=0, vetorRecebido=[9, 0, 0], motivo=conta nao encontrada}
+
+--- Estado da agencia 1 depois de consumir a fila ---
+{"agencia":1,"vetor":[9,4,0],"contas":[],"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":1,"fila-agencia-2":0,"fila-agencia-2.mortas":0}}
+
+--- Saldo da conta 0 na origem (o debito continua aplicado) ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":120.00}
+HTTP 200
+
+  >>> A mensagem NAO se perdeu: ficou na fila e foi entregue quando a agencia 1 voltou.
+  >>> Mas a conta 1 vivia so em memoria e sumiu no reinicio: o credito nao tinha onde ser aplicado.
+  >>> Com a dead-letter queue (funcionalidade adicional), ele foi para fila-agencia-1.mortas.
