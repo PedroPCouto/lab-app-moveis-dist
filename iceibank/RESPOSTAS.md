@@ -1,7 +1,15 @@
-# ICEIBank — Sprint 1 — RESPOSTAS
+# ICEIBank — RESPOSTAS (Sprints 1 e 2)
+
+Linguagem escolhida para os 4 sprints: **Java (Spring Boot)**.
+
+- **Sprint 1** (U2 — REST/MVC + relógio de Lamport + JWT): seções logo abaixo.
+- **Sprint 2** (U3 — mensageria RabbitMQ + relógio vetorial): [ao final do arquivo](#sprint-2--mensageria-pubsub-e-relógio-vetorial).
+
+---
+
+# Sprint 1
 
 Projeto: ICEIBank, Sprint 1 (U2 — Desenvolvimento Web / REST-MVC + relógio lógico de Lamport).
-Linguagem escolhida para os 4 sprints: **Java (Spring Boot)**.
 
 Todas as saídas citadas aqui foram tiradas da execução real registrada em
 `evidencias/sprint1/` (os `.png` e as saídas de texto correspondentes em
@@ -551,3 +559,361 @@ a tentativa do Bruno de ler o histórico da conta da Ana, barrada com 403) e
 cenário exato da pergunta 6.4.2 e um teste de concorrência com 8 threads), a regra de
 partição, as regras de conta, a autorização por dono e os três cenários de token da Parte F.
 Rodar com `cd agencia && ./mvnw test`.
+
+---
+
+# Sprint 2 — Mensageria (Pub/Sub) e relógio vetorial
+
+Projeto: ICEIBank, Sprint 2 (U3 — Comunicação indireta: RabbitMQ via CloudAMQP + relógio
+vetorial). Mesma base Java/Spring Boot do Sprint 1; a integração com o RabbitMQ usa
+**Spring AMQP** (`spring-boot-starter-amqp`), como sugere a seção 9.2 do roteiro.
+
+Todas as saídas citadas aqui vêm da execução real de 04/10/2026 contra uma instância
+CloudAMQP (Little Lemur), registrada em `evidencias/sprint2/` (os `.png`) e
+`evidencias/sprint2/saidas/` (o texto de cada saída). A sequência rodada foi
+`demo.sh preparar → concorrentes → local → entre-agencias → auth → resiliencia → mortas →
+linha-do-tempo`, com os logs limpos no início.
+
+## Como a arquitetura ficou
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| Exchange `iceibank.eventos` (topic, durável) | `config/MensageriaConfig` | para onde toda agência publica |
+| Filas `fila-agencia-{0,1,2}` (duráveis) | idem | cada uma ligada por `agencia.<id>.creditar` |
+| `RelogioVetorial` | `service/RelogioVetorial` | as três regras + `comparar(v1, v2)` |
+| Publicação | `service/Mensageria.publicar` | mensagem persistente + **espera o publisher confirm** |
+| Consumo | `service/ConsumidorCreditos` (`@RabbitListener`) | `aoReceber` + aplica o crédito |
+| Linha do tempo causal | `tools/MesclarLogs` | lista pares concorrentes e confere os causais |
+
+Três decisões que vão além do exemplo em Node e que precisei justificar para mim mesmo:
+
+1. **Cada agência declara as três filas, não só a sua.** Uma exchange topic descarta em
+   silêncio a mensagem que não casa com nenhuma fila. Se a agência 1 nunca tivesse subido,
+   `fila-agencia-1` não existiria e a transferência para ela sumiria — justamente o caso
+   que a mensageria deveria cobrir. Declarar é idempotente, então não custa nada.
+2. **200 só depois do *publisher confirm*.** `channel.publish` sozinho só garante que os
+   bytes saíram do processo. Com `publisher-confirm-type: simple` a transferência espera o
+   broker confirmar que aceitou (e, para fila durável + mensagem persistente, gravou) a
+   mensagem.
+3. **Se a publicação falhar, o débito é estornado (503).** Diferente do Sprint 1, aqui é
+   seguro desfazer: a mensagem não saiu da agência, ninguém mais viu esse dinheiro.
+
+## Parte B — Relógio vetorial (seção 6.4)
+
+### 1. Com 10 agências, o que acontece com o tamanho do vetor anexado a cada mensagem? Isso é um problema?
+
+Cada vetor passaria de 3 para **10 posições**: o tamanho cresce linearmente com o número de
+processos, O(N), em **toda** mensagem e em **todo** evento gravado no log.
+
+Para o ICEIBank isso **não é um problema**, por dois motivos concretos:
+
+- **O custo absoluto é irrisório.** Hoje o vetor ocupa `"vetorEnvio":[7,0,0]` dentro de uma
+  mensagem JSON de ~120 bytes (com `idTransferencia`, valor etc.). Com 10 agências seriam uns
+  20 caracteres a mais — menos que o próprio UUID da transferência.
+- **O conjunto de processos é pequeno e fixo.** Os "processos" do relógio são as agências,
+  não os clientes. O número de agências muda raramente e é conhecido de antemão
+  (`AgenciaConfig.NUMERO_AGENCIAS`).
+
+Vira problema quando N é grande **ou dinâmico**: milhares de nós, ou nós entrando e saindo
+(cada um precisa de uma posição; um vetor de 1.000 inteiros em cada mensagem e em cada linha
+de log já pesa, e é preciso combinar quem ocupa qual posição). Para esses casos existem
+variações que comprimem o vetor ou só guardam as posições não nulas, como *version vectors*
+por réplica, *dotted version vectors* e *interval tree clocks*. Mudar o número de agências
+aqui também exigiria migrar os logs antigos, já que os vetores gravados têm 3 posições (o
+`aoReceber` recusa vetores de tamanho diferente, coberto em `RelogioVetorialTest`).
+
+### 2. `V1 = [3, 1, 0]` e `V2 = [3, 2, 0]`: qual aconteceu primeiro?
+
+**V1 aconteceu antes de V2.** Posição a posição:
+
+| posição | V1 | V2 | |
+|---|---|---|---|
+| 0 | 3 | 3 | igual |
+| 1 | 1 | 2 | V1 < V2 |
+| 2 | 0 | 0 | igual |
+
+`V1[i] <= V2[i]` em todas as posições e os vetores são diferentes, logo V1 → V2. Lendo o
+significado: o evento V2 "conhece" tudo o que V1 conhecia (3 eventos da agência 0, nenhum da
+2) e mais um evento da agência 1. É o padrão de dois eventos consecutivos da agência 1 (ou de
+um evento da agência 1 que recebeu, direta ou indiretamente, a história de V1).
+
+### 3. `V1 = [3, 1, 0]` e `V2 = [1, 3, 0]`: qual aconteceu primeiro?
+
+**São concorrentes.** Na posição 0, V1 > V2 (3 > 1); na posição 1, V1 < V2 (1 < 3). Nem
+`V1 <= V2` nem `V2 <= V1`. V1 viu dois eventos da agência 0 que V2 não viu, e V2 viu dois
+eventos da agência 1 que V1 não viu: nenhum dos dois pode ter influenciado o outro.
+
+As duas comparações estão no teste `comparaRelacoesDasPerguntasDaParteB`, que chama o mesmo
+`RelogioVetorial.comparar` usado pelo `MesclarLogs`.
+
+### Observação: o relógio sobrevive ao reinício da agência
+
+O exemplo do roteiro recria o relógio em `[0,0,0]` a cada `node src/app.js`. Isso quebra a
+análise causal depois de um reinício: a agência 1 voltaria a emitir `[0,1,0]`, um vetor que
+ela já tinha usado e que as outras agências já tinham visto. Eventos novos pareceriam
+"anteriores" a coisas que aconteceram antes deles.
+
+Por isso o `RelogioVetorial` lê o último vetor gravado no próprio `eventos-agencia-N.jsonl`
+ao subir. Na evidência de resiliência isso aparece: a agência 1 caiu em `[7,3,0]` e, ao
+voltar, seu primeiro evento foi `[9,4,0]` (`max([7,3,0],[9,0,0]) + 1` na posição 1), e não
+`[9,1,0]`. As **contas** continuam em memória e se perdem (é o ponto da Parte C); o **log**
+já era persistente desde o Sprint 1, e o relógio passou a acompanhá-lo.
+
+## Parte C — Publish/Subscribe entre agências (seção 7.5)
+
+Antes das perguntas, o que a transferência normal mostrou (`transferencia-assincrona.png`):
+
+```
+[agencia-0] [Vetor [6, 0, 0]] TRANSFERENCIA_DEBITO   ...
+[agencia-0] [Vetor [7, 0, 0]] TRANSFERENCIA_ENVIADA  ... routingKey=agencia.1.creditar
+[agencia-1] [Vetor [7, 3, 0]] TRANSFERENCIA_CREDITO_REMOTO ... vetorRecebido=[7, 0, 0]
+```
+
+A agência 1 estava em `[0,2,0]`. Ao receber `[7,0,0]`: `max` posição a posição = `[7,2,0]`,
+mais 1 na própria posição = `[7,3,0]`. O crédito chegou 14 ms depois do envio, sem nenhuma
+chamada HTTP entre as agências.
+
+### 1. O que aconteceu quando a Agência 1 voltou? A mensagem "sumiu" por falha da mensageria?
+
+Sequência observada (`resiliencia-fila.png`):
+
+1. Agência 1 no ar com a conta 1 (saldo 115,00), vetor `[7,3,0]`.
+2. Agência 1 derrubada (`/status` → HTTP 000).
+3. Transferência de R$ 10,00 da conta 0 para a conta 1: **HTTP 200**, "Transferencia publicada
+   para a agencia de destino (entrega assincrona)", vetor do envio `[9,0,0]`.
+4. Pelo `/status` da agência 0: `"fila-agencia-1": 1`. A mensagem estava no broker,
+   esperando.
+5. Agência 1 religada. 23 ms depois de a aplicação terminar de subir (09:50:23.787), o log mostrou:
+   ```
+   [agencia-1] 09:50:23.810 [Vetor [9, 4, 0]] CREDITO_REMOTO_FALHOU
+       {idTransferencia=614b73c3-..., idConta=1, valor=10, origemAgencia=0,
+        vetorRecebido=[9, 0, 0], motivo=conta nao encontrada}
+   ```
+6. `/status` da agência 1: `"contas": []`, `"fila-agencia-1": 0`.
+7. A conta 0 continuou debitada (saldo 120,00).
+
+**A mensageria não falhou.** Ela fez exatamente o que prometia: guardou a mensagem enquanto
+ninguém podia consumi-la e a entregou assim que a agência voltou. Prova disso é o próprio
+log: o evento `CREDITO_REMOTO_FALHOU` existe, carrega o `idTransferencia` e o `vetorRecebido`
+corretos, e a fila foi de 1 para 0. O crédito não foi aplicado **porque a conta 1 não existia
+mais**: contas vivem em um `ConcurrentHashMap` em memória, e o processo novo da agência 1
+começou vazio. A mensagem chegou intacta a um destinatário que tinha esquecido quem era.
+
+No código do roteiro a história terminaria aí, com a mensagem confirmada (`ack`) e
+descartada. Aqui ela foi para `fila-agencia-1.mortas` (`"fila-agencia-1.mortas": 1`), que é
+a funcionalidade adicional, descrita mais abaixo.
+
+### 2. Comparando com o Sprint 1: o que melhorou e o que continua em aberto?
+
+**O que melhorou:**
+
+- **Desacoplamento no tempo.** No Sprint 1, a agência de destino precisava estar no ar no
+  exato momento da transferência; se não estivesse, a API devolvia 502 e pronto. Agora a
+  origem não precisa saber se o destino está no ar, nem onde ele está: só conhece a exchange
+  e a routing key.
+- **A mensagem não se perde.** Exchange e fila duráveis, mensagem persistente e publisher
+  confirm. Uma transferência feita com o destino fora do ar é entregue quando ele volta, sem
+  nenhum reenvio manual. No Sprint 1 o crédito simplesmente nunca acontecia.
+- **A falha que sobra do lado da origem ficou segura.** Se o RabbitMQ estiver indisponível,
+  a publicação falha antes de qualquer outra agência ver o dinheiro, e o débito é estornado
+  (`TRANSFERENCIA_ESTORNADA`, HTTP 503, testado em `falhaAoPublicarEstornaODebito`). No
+  Sprint 1 o débito ficava pendurado.
+
+**O que continua em aberto — "a mensagem não se perde" não é "o sistema está correto":**
+
+- **Não há atomicidade entre débito e crédito.** O débito na agência 0 é aplicado na hora; o
+  crédito na agência 1 acontece depois, e pode falhar de forma permanente (conta inexistente,
+  como vimos). Nesse caso o dinheiro fica fora das duas contas e **ninguém avisa a origem**:
+  a Ana recebeu 200, e 200 agora quer dizer apenas "o broker aceitou a mensagem". Falta uma
+  compensação (estornar a origem quando o crédito falha) — é a Saga do Sprint 4.
+- **Consistência eventual.** Mesmo no caminho feliz, existe uma janela em que o valor já saiu
+  da conta 0 e ainda não entrou na conta 1. Quem somar os saldos nesse instante vê dinheiro
+  sumido.
+- **Entrega "pelo menos uma vez".** O `ack` é enviado depois que o método do consumidor
+  termina. Se a agência cair *depois* de creditar e *antes* do `ack`, o RabbitMQ entrega a
+  mensagem de novo e o crédito é aplicado duas vezes. O `idTransferencia` existe em toda
+  mensagem, mas o consumidor ainda não o usa para descartar duplicatas (idempotência).
+- **Estado em memória.** Enquanto as contas não forem persistidas, todo reinício é uma perda
+  de dados — a mensageria só torna essa perda visível.
+
+### 3. O consumidor processa créditos sem verificar JWT. Isso é um problema de segurança?
+
+**Sim, em princípio é**, e vale entender por que hoje ele é pequeno.
+
+O consumidor confia cegamente no conteúdo da mensagem: `idConta`, `valor` e `origemAgencia`.
+Quem conseguir publicar em `iceibank.eventos` com a routing key `agencia.1.creditar` cria
+dinheiro do nada na agência 1, e ainda escolhe o vetor que quiser. O JWT não protege esse
+caminho porque a mensagem nunca passa pelo `JwtFilter`. No Sprint 1, a rota
+`/creditar-remoto` exigia um token de tipo `SISTEMA`; com o fim da rota, esse controle
+também saiu (`TipoToken.SISTEMA` foi removido).
+
+**Quem consegue publicar hoje?** Quem tem a AMQP URL. Ela contém usuário e senha do vhost no
+CloudAMQP, e as três agências usam **a mesma** credencial, com permissão total de
+configurar, ler e escrever. Na prática, hoje sou só eu: a instância é minha, a URL não está
+no repositório (só na variável `RABBITMQ_URL`), e a conexão é `amqps` (TLS). A fronteira de
+confiança só mudou de lugar: saiu do segredo do JWT e foi para a credencial do broker. Se a
+URL vazar, por exemplo num print ou num commit, qualquer pessoa vira uma "agência".
+
+Como fechar isso num sistema real:
+
+- **Um usuário de broker por agência, com permissões mínimas.** No RabbitMQ, as permissões
+  de *write* e *read* são por expressão regular, e as *topic permissions* restringem as
+  routing keys. A agência 1 só leria `fila-agencia-1` e só publicaria em `agencia.0.*` e
+  `agencia.2.*`.
+- **Validar o remetente.** Preencher a propriedade `user_id` da mensagem (o RabbitMQ rejeita
+  se não bater com o usuário autenticado na conexão) e conferir no consumidor que
+  `origemAgencia` corresponde a ele.
+- **Assinar a mensagem** com um token de sistema, como era o JWT `SISTEMA`, ou um HMAC do
+  corpo. O consumidor rejeita, de preferência para a fila de mortas, o que não estiver
+  assinado.
+
+## Parte D — Linha do tempo causal (seção 8.3)
+
+Resumo da execução (`linha-do-tempo-causal.png`): 18 eventos, 95 pares de eventos de
+agências diferentes, **52 concorrentes** e 43 causalmente relacionados. As duas
+transferências entre agências aparecem na seção de conferência como
+`ANTES (aconteceu-antes, NAO concorrente)`, tanto débito → crédito quanto envio → crédito, e
+nenhum desses pares aparece na lista de concorrentes (tarefa 3 da seção 8.2).
+
+### 1. O que, no relógio vetorial, torna possível essa comparação confiável?
+
+O vetor guarda **quantos eventos de cada processo** fazem parte da história causal do
+evento: `V(e)[j]` é o número de eventos da agência `j` que "aconteceram antes" de `e`, que
+`e` conhece direta ou indiretamente. Com isso vale a equivalência nas duas direções:
+
+> `a → b` **se e somente se** `V(a) < V(b)` (≤ em toda posição e diferente).
+
+O Lamport só garante a ida (`a → b ⇒ L(a) < L(b)`). A volta falha porque o relógio de Lamport
+espreme toda essa informação num único número: depois do `max`, não dá mais para saber
+*de qual processo* veio cada incremento. Dois eventos com `L = 5` e `L = 8` podem ser
+causalmente ligados ou não, e o número não diz qual dos dois casos é. O vetor mantém uma
+coordenada por processo, então "b viu tudo que a viu" vira uma verificação posição a posição,
+e a ausência dessa relação nos dois sentidos é a prova de concorrência.
+
+### 2. Um par que o script classificou como concorrente. Faz sentido?
+
+**Par 1 (o caso planejado da tarefa 1):**
+
+```
+[agencia-0] DEPOSITO [3,0,0]  x  [agencia-1] DEPOSITO [0,2,0]
+```
+
+São os depósitos de `demo.sh concorrentes`: três `curl` disparados em paralelo, um para cada
+agência, em contas diferentes (3, 1 e 2). Nenhuma mensagem foi trocada entre eles. O vetor
+da agência 0 tem 0 na posição da agência 1, e vice-versa: nenhum dos dois sabia da
+existência do outro. **Faz sentido**: eles poderiam ter acontecido em qualquer ordem, ou
+literalmente ao mesmo tempo, sem mudar o resultado de nenhum.
+
+**Par 2 (mais interessante, porque contraria o relógio de parede):**
+
+```
+[agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]   (09:49:32.628)
+     x  [agencia-0] TRANSFERENCIA_DEBITO [8,0,0]   (09:50:02, da 2a transferencia)
+```
+
+Pela hora de parede, o crédito da primeira transferência aconteceu **30 segundos antes** do
+débito da segunda. Mesmo assim, o script diz que são concorrentes, e está certo. O fluxo é
+sempre de 0 para 1: a agência 0 publica e a 1 consome, sem nenhuma resposta ou confirmação
+de volta. Por isso a posição 1 do vetor da agência 0 é **sempre 0**: nada do que a agência 1
+fez chegou ao conhecimento da agência 0. O segundo débito dependeu apenas do saldo da conta
+0, que o primeiro crédito (na conta 1, em outra agência) não poderia ter alterado. "Antes no
+relógio" não é "causa". É exatamente a distinção que o Lamport não consegue fazer.
+
+O par de controle confirma que o script não marca tudo como concorrente: o débito `[8,0,0]`
+e o crédito correspondente `[9,6,0]`, ligados pela mensagem `614b73c3`, aparecem como
+`ANTES`.
+
+### 3. O algoritmo é O(n²). Seria um problema com milhões de eventos? Como escalar?
+
+**Seria inviável.** Com os 18 eventos desta execução já são 153 pares, 95 deles entre
+agências diferentes. Com 1 milhão de eventos seriam ~5 × 10¹¹ comparações, cada uma
+percorrendo o vetor inteiro, e a saída (listar todos os pares concorrentes) também seria
+quadrática e inútil de ler.
+
+O que daria para fazer, do mais simples ao mais estrutural:
+
+- **Usar o fato de que cada agência é sequencial.** Os eventos de uma mesma agência estão
+  totalmente ordenados e seus vetores só crescem. Para um evento `e` da agência `i`, os
+  eventos concorrentes da agência `j` formam um **intervalo contíguo** da sequência de `j`:
+  começa depois do último evento de `j` que `e` conhece (`e.V[j]`) e termina antes do
+  primeiro evento de `j` que conhece `e` (`V[i] >= e.V[i]`). Os dois limites saem por busca
+  binária, o que dá O(n log n) por par de agências. E para **contar** concorrentes nem é
+  preciso listá-los.
+- **Perguntar só o que interessa.** Na prática, concorrência importa entre operações que
+  tocam o **mesmo dado** (a mesma conta). Indexar os eventos por conta e comparar só dentro
+  de cada grupo reduz n drasticamente. É o que um banco de dados faz para detectar conflitos.
+- **Janela de tempo.** Eventos muito distantes no relógio de parede quase sempre já estão
+  ligados causalmente por alguma mensagem intermediária. Analisar por janelas, ou de forma
+  incremental conforme o log chega, limita o tamanho de cada lote.
+- **Paralelizar.** As comparações são independentes entre si, então dá para particionar por
+  par de agências ou por conta e distribuir (map/reduce, Spark).
+
+## Funcionalidade adicional (seção 2.1) — dead-letter queue
+
+**O que é:** cada `fila-agencia-N` é declarada com `x-dead-letter-exchange =
+iceibank.mensagens-mortas`. Quando o consumidor não consegue aplicar um crédito (conta
+inexistente, ou corpo da mensagem inválido), ele lança
+`AmqpRejectAndDontRequeueException`: a mensagem é **rejeitada sem voltar para a fila**, e o
+próprio RabbitMQ a move para `fila-agencia-N.mortas`, preservando o corpo, o `messageId` e o
+cabeçalho `x-death` com o motivo. Junto vêm:
+
+- `POST /mensagens-mortas/reprocessar` (protegida por JWT): devolve as mensagens mortas da
+  agência para a fila principal. Cada uma só sai da fila de mortas (`ack`) depois do publisher
+  confirm da republicação; se algo falhar no meio, ela continua lá. O reprocessamento move no
+  máximo o que havia na fila no início, então uma mensagem que voltar a falhar espera a
+  próxima rodada em vez de entrar em loop.
+- `/status` passou a mostrar quantas mensagens há em cada fila e em cada fila de mortas.
+
+**Evidência** (`funcionalidade-adicional.png`, continuação direta da resiliência):
+
+```
+fila-agencia-1.mortas: 1                         <- o crédito de R$ 10 que não achou a conta
+POST /contas  {"id":1, ...}            HTTP 201  [Vetor [9,5,0]] CRIAR_CONTA
+POST /mensagens-mortas/reprocessar     HTTP 200  {"reprocessadas":1}
+[Vetor [9,6,0]] TRANSFERENCIA_CREDITO_REMOTO {idTransferencia=614b73c3-..., novoSaldo=10.00}
+fila-agencia-1.mortas: 0
+```
+
+O crédito feito com a agência fora do ar, que tinha falhado depois do reinício, finalmente
+chegou à conta 1. O `idTransferencia` é o mesmo do débito na agência 0, e o
+`vetorRecebido` continua `[9,0,0]`: a causalidade original foi preservada.
+
+**Por que escolhi esta:** ela ataca exatamente o buraco que a Parte C expõe. O roteiro
+mostra a mensagem chegando e se perdendo por falta da conta. Com a dead-letter queue, "não
+deu para aplicar agora" deixa de significar "perdido para sempre" e passa a significar
+"guardado, visível e reprocessável". É um comportamento novo e observável, que usa um recurso
+de verdade do broker (DLX), e não um ajuste cosmético. Não resolve a consistência: o dinheiro
+continua fora das duas contas até alguém reprocessar, e a origem continua sem saber. Mas
+transforma uma perda silenciosa em uma pendência que um operador consegue ver e resolver.
+Quem fecha o ciclo automaticamente é a compensação do Sprint 4.
+
+## Continuidade do Sprint 1 (regressão verificada)
+
+- **JWT** (`regressao-jwt.png`): sem token → 401; token válido → 200; senha errada → 401;
+  token expirado → 401. A antiga rota interna `/contas/0/creditar-remoto` agora responde
+  **404**. Antes desta mudança, rota inexistente caía no tratador genérico e virava 500;
+  corrigido no `TratadorDeErros`.
+- **Particionamento**: `POST /contas` com id 1 na agência 0 → 400 "Conta 1 nao pertence a
+  esta agencia" (`preparacao-contas.png`).
+- **Frontend** (`frontend-transferencia-assincrona.png`): testado pelo navegador (Chrome
+  dirigido pelo DevTools Protocol, sem extensões). Login da Ana na agência 0, transferência
+  de R$ 5,00 da conta 0 para a conta 2 (agência 2). A tela informou "TRANSFERENCIA ENTRE
+  AGENCIAS (...) publicada no RabbitMQ", com o vetor do evento `[11,0,0]`. As pílulas de
+  status mostram a agência 2 em `[11,0,3]` (ela consumiu a mensagem), e o histórico da conta
+  0 lista os eventos com os vetores. O frontend só precisou trocar "Lamport" por "vetor" nos
+  rótulos.
+- **Testes automatizados**: 37 testes (`cd agencia && ./mvnw test`), entre eles as três
+  regras do relógio vetorial, a sequência do roteiro (`[1,0,0] → [2,0,0] → [2,1,0]`),
+  restauração do vetor a partir do log, concorrência com 8 threads, publicação com a routing
+  key e o vetor certos, estorno quando a publicação falha e crédito remoto para conta
+  inexistente. Os testes de serviço substituem o RabbitMQ por um mock; o caminho real pelo
+  broker foi verificado pelas execuções acima.
+
+## Declaração de uso de IA
+
+Conforme a nota de transparência do roteiro: a implementação do Sprint 2 (código, scripts,
+testes e o texto destas respostas) foi desenvolvida com apoio do **Claude Code (Anthropic)**,
+a partir do código do Sprint 1 e do roteiro. As execuções e evidências são reais, rodadas
+contra a minha instância CloudAMQP. Revisei o código entregue e consigo explicar cada parte,
+em especial as três decisões listadas no início desta seção e o motivo de cada par
+concorrente/causal citado na Parte D.
