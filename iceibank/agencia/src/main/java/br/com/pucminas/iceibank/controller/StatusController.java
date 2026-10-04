@@ -9,16 +9,16 @@ import br.com.pucminas.iceibank.config.AgenciaConfig;
 import br.com.pucminas.iceibank.dto.StatusResponse;
 import br.com.pucminas.iceibank.service.ContaService;
 import br.com.pucminas.iceibank.service.RegistroEventos;
-import br.com.pucminas.iceibank.service.RelogioLamport;
+import br.com.pucminas.iceibank.service.RelogioVetorial;
 
 @RestController
 public class StatusController {
     private final AgenciaConfig config;
-    private final RelogioLamport relogio;
+    private final RelogioVetorial relogio;
     private final ContaService contaService;
     private final RegistroEventos registro;
 
-    public StatusController(AgenciaConfig config, RelogioLamport relogio, ContaService contaService,
+    public StatusController(AgenciaConfig config, RelogioVetorial relogio, ContaService contaService,
                             RegistroEventos registro) {
         this.config = config;
         this.relogio = relogio;

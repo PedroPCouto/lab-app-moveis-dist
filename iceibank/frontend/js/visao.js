@@ -92,7 +92,7 @@ window.Visao = (function () {
       else if (situacao.id === agenciaAtual) { pilula.className += ' pilula--atual'; }
 
       pilula.textContent = situacao.noAr
-        ? 'Agencia ' + situacao.id + ' - Lamport ' + situacao.relogioLamport
+        ? 'Agencia ' + situacao.id + ' - vetor ' + JSON.stringify(situacao.relogioVetorial)
           + ' - ' + situacao.quantidadeContas + ' conta(s)'
         : 'Agencia ' + situacao.id + ' - fora do ar';
       caixa.appendChild(pilula);
@@ -114,7 +114,7 @@ window.Visao = (function () {
     eventos.forEach(function (evento) {
       var linha = document.createElement('tr');
       [
-        evento.timestampLamport,
+        JSON.stringify(evento.timestampVetorial),
         evento.agencia,
         evento.tipo,
         JSON.stringify(evento.detalhes),

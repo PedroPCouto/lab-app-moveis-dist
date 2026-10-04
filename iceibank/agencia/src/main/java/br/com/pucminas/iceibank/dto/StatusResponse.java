@@ -7,7 +7,7 @@ public record StatusResponse(
         int idAgencia,
         int porta,
         int numeroAgencias,
-        int relogioLamport,
+        int[] relogioVetorial,
         int quantidadeContas,
         List<Integer> contas,
         int eventosRegistrados,

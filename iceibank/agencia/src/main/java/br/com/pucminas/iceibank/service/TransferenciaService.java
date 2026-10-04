@@ -23,12 +23,12 @@ public class TransferenciaService {
 
     private final ContaService contaService;
     private final AgenciaConfig config;
-    private final RelogioLamport relogio;
+    private final RelogioVetorial relogio;
     private final RegistroEventos registro;
     private final RestClient restClient;
     private final JwtService jwtService;
 
-    public TransferenciaService(ContaService contaService, AgenciaConfig config, RelogioLamport relogio,
+    public TransferenciaService(ContaService contaService, AgenciaConfig config, RelogioVetorial relogio,
                                 RegistroEventos registro, RestClient restClient, JwtService jwtService) {
         this.contaService = contaService;
         this.config = config;
@@ -52,7 +52,7 @@ public class TransferenciaService {
             throw ApiException.naoEncontrado("Conta de destino nao encontrada.");
         }
 
-        int tsDebito;
+        int[] tsDebito;
         synchronized (contaOrigem) {
             if (!contaOrigem.temSaldo(valor)) {
                 throw ApiException.requisicaoInvalida("Saldo insuficiente.");
@@ -71,7 +71,7 @@ public class TransferenciaService {
 
     private TransferenciaResponse creditarLocal(int idOrigem, int idDestino, BigDecimal valor, Conta contaOrigem) {
         Conta contaDestino = contaService.buscar(idDestino);
-        int tsCredito;
+        int[] tsCredito;
         synchronized (contaDestino) {
             tsCredito = relogio.eventoLocal();
             contaDestino.creditar(valor);
@@ -85,7 +85,7 @@ public class TransferenciaService {
 
     private TransferenciaResponse creditarEmOutraAgencia(int idOrigem, int idDestino, BigDecimal valor,
                                                          int agenciaDestino, Conta contaOrigem) {
-        int tsEnvio = relogio.aoEnviar();
+        int[] tsEnvio = relogio.aoEnviar();
         String urlDestino = config.urlDe(agenciaDestino);
 
         try {
@@ -110,15 +110,15 @@ public class TransferenciaService {
         }
     }
 
-    public Conta creditarRemoto(int idConta, BigDecimal valor, int timestampRecebido, int origemAgencia) {
-        int ts = relogio.aoReceber(timestampRecebido);
+    public Conta creditarRemoto(int idConta, BigDecimal valor, int[] vetorRecebido, int origemAgencia) {
+        int[] ts = relogio.aoReceber(vetorRecebido);
 
         Conta conta = contaService.buscar(idConta);
         synchronized (conta) {
             conta.creditar(valor);
             registro.registrar("TRANSFERENCIA_CREDITO_REMOTO", ts, ContaService.detalhes(
                     "idConta", idConta, "valor", valor, "origemAgencia", origemAgencia,
-                    "timestampRecebido", timestampRecebido, "novoSaldo", conta.getSaldo()));
+                    "vetorRecebido", vetorRecebido, "novoSaldo", conta.getSaldo()));
         }
         return conta;
     }

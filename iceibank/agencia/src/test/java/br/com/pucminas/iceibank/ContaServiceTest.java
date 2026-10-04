@@ -19,7 +19,7 @@ import br.com.pucminas.iceibank.model.Autenticacao;
 import br.com.pucminas.iceibank.model.TipoToken;
 import br.com.pucminas.iceibank.service.ContaService;
 import br.com.pucminas.iceibank.service.RegistroEventos;
-import br.com.pucminas.iceibank.service.RelogioLamport;
+import br.com.pucminas.iceibank.service.RelogioVetorial;
 import tools.jackson.databind.json.JsonMapper;
 
 class ContaServiceTest {
@@ -34,7 +34,7 @@ class ContaServiceTest {
                 new IceibankProperties.Jwt(IceibankProperties.SEGREDO_PADRAO, null, null), List.of());
         AgenciaConfig config = new AgenciaConfig(propriedades);
         RegistroEventos registro = new RegistroEventos("agencia-0", pastaTemporaria, JsonMapper.builder().build());
-        contaService = new ContaService(config, new RelogioLamport(), registro);
+        contaService = new ContaService(config, new RelogioVetorial(0, AgenciaConfig.NUMERO_AGENCIAS), registro);
     }
 
     @Test

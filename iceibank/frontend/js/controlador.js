@@ -25,7 +25,7 @@
           return {
             id: agencia.id,
             noAr: true,
-            relogioLamport: status.relogioLamport,
+            relogioVetorial: status.relogioVetorial,
             quantidadeContas: status.quantidadeContas
           };
         })
@@ -163,7 +163,7 @@
           + Visao.moeda(resultado.valor) + ' da conta ' + resultado.idOrigem
           + ' para a conta ' + resultado.idDestino + '.\n'
           + 'Saldo da origem: ' + Visao.moeda(resultado.saldoOrigem)
-          + '  |  Lamport do evento: ' + resultado.timestampLamport);
+          + '  |  Vetor do evento: ' + JSON.stringify(resultado.timestampVetorial));
         atualizarTudo();
       })
       .catch(tratarErro);

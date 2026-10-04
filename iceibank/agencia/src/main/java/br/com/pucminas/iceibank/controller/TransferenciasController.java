@@ -36,7 +36,7 @@ public class TransferenciasController {
                                               @Valid @RequestBody CreditoRemotoRequest requisicao,
                                               @RequestAttribute(Autenticacao.ATRIBUTO) Autenticacao auth) {
         Conta conta = transferenciaService.creditarRemoto(
-                id, requisicao.valor(), requisicao.timestampLamport(), requisicao.origemAgencia());
+                id, requisicao.valor(), requisicao.vetorEnvio(), requisicao.origemAgencia());
         return Map.of(
                 "mensagem", "Credito remoto aplicado.",
                 "saldoAtual", conta.getSaldo(),

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -35,22 +36,16 @@ public final class MesclarLogs {
             return;
         }
 
-        todosEventos.sort(Comparator.comparingInt(Evento::timestampLamport)
-                .thenComparing(Evento::agencia));
+        todosEventos.sort(Comparator.comparing(Evento::horaParede));
 
-        System.out.println("=== Linha do tempo unificada (ordenada por relogio de Lamport) ===");
-        for (int i = 0; i < todosEventos.size(); i++) {
-            Evento evento = todosEventos.get(i);
-            System.out.printf("[Lamport %3d] (%s) %s - %-30s %s%s%n",
-                    evento.timestampLamport(),
-                    evento.horaParede(),
+        System.out.println("=== Linha do tempo (ordenada por hora de parede) ===");
+        for (Evento evento : todosEventos) {
+            System.out.printf("[%s] vetor=%-10s %-30s %s%n",
                     evento.agencia(),
+                    Arrays.toString(evento.timestampVetorial()).replace(" ", ""),
                     evento.tipo(),
-                    MAPPER.writeValueAsString(evento.detalhes()),
-                    empataComVizinho(todosEventos, i) ? "   <-- EMPATE" : "");
+                    MAPPER.writeValueAsString(evento.detalhes()));
         }
-
-        imprimirResumo(todosEventos);
     }
 
     private static List<Evento> lerEventos(Path pastaDados) throws IOException {
@@ -58,38 +53,16 @@ public final class MesclarLogs {
         try (Stream<Path> arquivos = Files.list(pastaDados)) {
             for (Path arquivo : arquivos.filter(a -> a.toString().endsWith(".jsonl")).sorted().toList()) {
                 for (String linha : Files.readAllLines(arquivo, StandardCharsets.UTF_8)) {
-                    if (!linha.isBlank()) {
-                        eventos.add(MAPPER.readValue(linha, Evento.class));
+                    if (linha.isBlank()) {
+                        continue;
+                    }
+                    Evento evento = MAPPER.readValue(linha, Evento.class);
+                    if (evento.timestampVetorial() != null) {
+                        eventos.add(evento);
                     }
                 }
             }
         }
         return eventos;
-    }
-
-    private static boolean empataComVizinho(List<Evento> eventos, int indice) {
-        Evento atual = eventos.get(indice);
-        return (indice > 0 && empatam(atual, eventos.get(indice - 1)))
-                || (indice < eventos.size() - 1 && empatam(atual, eventos.get(indice + 1)));
-    }
-
-    private static boolean empatam(Evento a, Evento b) {
-        return a.timestampLamport() == b.timestampLamport() && !a.agencia().equals(b.agencia());
-    }
-
-    private static void imprimirResumo(List<Evento> eventos) {
-        long empates = 0;
-        for (int i = 0; i < eventos.size(); i++) {
-            if (empataComVizinho(eventos, i)) {
-                empates++;
-            }
-        }
-        System.out.println();
-        System.out.println("=== Resumo ===");
-        System.out.println("Eventos no total .................. " + eventos.size());
-        System.out.println("Maior timestamp de Lamport ........ "
-                + eventos.get(eventos.size() - 1).timestampLamport());
-        System.out.println("Eventos empatados entre agencias .. " + empates
-                + "  (o relogio de Lamport nao os ordena entre si)");
     }
 }

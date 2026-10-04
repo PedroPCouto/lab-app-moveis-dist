@@ -19,10 +19,10 @@ import br.com.pucminas.iceibank.model.Evento;
 public class ContaService {
     private final Map<Integer, Conta> contas = new ConcurrentHashMap<>();
     private final AgenciaConfig config;
-    private final RelogioLamport relogio;
+    private final RelogioVetorial relogio;
     private final RegistroEventos registro;
 
-    public ContaService(AgenciaConfig config, RelogioLamport relogio, RegistroEventos registro) {
+    public ContaService(AgenciaConfig config, RelogioVetorial relogio, RegistroEventos registro) {
         this.config = config;
         this.relogio = relogio;
         this.registro = registro;
@@ -40,7 +40,7 @@ public class ContaService {
         String nome = (nomeAluno == null || nomeAluno.isBlank()) ? auth.nome() : nomeAluno;
         Conta conta = new Conta(id, nome, auth.sujeito(), saldoInicial);
 
-        int ts = relogio.eventoLocal();
+        int[] ts = relogio.eventoLocal();
         contas.put(id, conta);
         registro.registrar("CRIAR_CONTA", ts, detalhes(
                 "id", id, "nomeAluno", nome, "dono", auth.sujeito(), "saldoInicial", conta.getSaldo()));
@@ -74,7 +74,7 @@ public class ContaService {
     public Conta depositar(int id, BigDecimal valor, Autenticacao auth) {
         Conta conta = buscarDoUsuario(id, auth);
         synchronized (conta) {
-            int ts = relogio.eventoLocal();
+            int[] ts = relogio.eventoLocal();
             conta.creditar(valor);
             registro.registrar("DEPOSITO", ts, detalhes(
                     "id", id, "valor", valor, "novoSaldo", conta.getSaldo()));
@@ -88,7 +88,7 @@ public class ContaService {
             if (!conta.temSaldo(valor)) {
                 throw ApiException.requisicaoInvalida("Saldo insuficiente.");
             }
-            int ts = relogio.eventoLocal();
+            int[] ts = relogio.eventoLocal();
             conta.debitar(valor);
             registro.registrar("SAQUE", ts, detalhes(
                     "id", id, "valor", valor, "novoSaldo", conta.getSaldo()));
