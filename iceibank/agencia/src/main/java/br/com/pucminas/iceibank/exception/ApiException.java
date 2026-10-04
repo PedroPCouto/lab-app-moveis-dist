@@ -34,7 +34,7 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.FORBIDDEN, mensagem);
     }
 
-    public static ApiException agenciaIndisponivel(String mensagem) {
-        return new ApiException(HttpStatus.BAD_GATEWAY, mensagem);
+    public static ApiException mensageriaIndisponivel(String mensagem) {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, mensagem);
     }
 }

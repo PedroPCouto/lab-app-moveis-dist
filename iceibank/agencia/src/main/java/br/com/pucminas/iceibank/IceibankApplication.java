@@ -21,6 +21,13 @@ public class IceibankApplication {
 			System.exit(1);
 		}
 
+		String urlRabbit = System.getenv("RABBITMQ_URL");
+		if (urlRabbit == null || urlRabbit.isBlank()) {
+			System.err.println("Defina a variavel de ambiente RABBITMQ_URL com a URL AMQP da sua instancia "
+					+ "CloudAMQP (amqps://usuario:senha@host/vhost) antes de iniciar a agencia.");
+			System.exit(1);
+		}
+
 		SpringApplication aplicacao = new SpringApplication(IceibankApplication.class);
 		aplicacao.setDefaultProperties(Map.of(
 				"server.port", String.valueOf(AgenciaConfig.portaDaAgencia(offset, idAgencia))));

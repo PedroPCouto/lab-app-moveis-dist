@@ -17,8 +17,7 @@ public record IceibankProperties(
 
     public record Jwt(
             @DefaultValue(SEGREDO_PADRAO) String segredo,
-            @DefaultValue("30m") Duration expiracao,
-            @DefaultValue("60s") Duration expiracaoInterna) {
+            @DefaultValue("30m") Duration expiracao) {
     }
 
     public record UsuarioProps(String usuario, String nome, String senhaHash) {

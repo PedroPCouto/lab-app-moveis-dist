@@ -1,6 +1,7 @@
 package br.com.pucminas.iceibank.dto;
 
 import java.util.List;
+import java.util.Map;
 
 public record StatusResponse(
         String situacao,
@@ -11,5 +12,6 @@ public record StatusResponse(
         int quantidadeContas,
         List<Integer> contas,
         int eventosRegistrados,
+        Map<String, Long> filas,
         String horaParede) {
 }

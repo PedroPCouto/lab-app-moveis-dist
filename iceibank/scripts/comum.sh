@@ -54,6 +54,20 @@ titulo() {
 
 passo() { echo; echo "--- $* ---"; }
 
+status_resumido() {
+  curl -sf "$(url_da_agencia "$1")/status" \
+    | jq -c '{agencia: .idAgencia, vetor: .relogioVetorial, contas, filas}' 2>/dev/null \
+    || echo "  agencia $1 fora do ar"
+}
+
+# Linhas "[Vetor ...]" que a agencia imprimiu no console (data/agencia-N.out), sem o
+# prefixo do logger: e o "log das agencias" que as evidencias do Sprint 2 pedem.
+log_da_agencia() {
+  local id="$1" linhas="${2:-3}"
+  grep -a '\[Vetor' "$AGENCIA_DIR/data/agencia-$id.out" 2>/dev/null | tail -"$linhas" \
+    | sed -E 's/^([0-9:.]+) +INFO +RegistroEventos +: /\1 /' | sed "s/^/  [agencia-$id] /"
+}
+
 obter_token() {
   local usuario="$1" senha="$2" agencia="$3"
   curl -s -X POST "$(url_da_agencia "$agencia")/auth/login" \

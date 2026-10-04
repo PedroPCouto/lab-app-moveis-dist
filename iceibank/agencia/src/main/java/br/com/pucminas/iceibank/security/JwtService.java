@@ -30,7 +30,6 @@ public class JwtService {
 
     private final SecretKey chave;
     private final Duration expiracao;
-    private final Duration expiracaoInterna;
     private final String emissor;
 
     public JwtService(IceibankProperties propriedades, AgenciaConfig agenciaConfig) {
@@ -41,16 +40,11 @@ public class JwtService {
         }
         this.chave = Keys.hmacShaKeyFor(segredo);
         this.expiracao = propriedades.jwt().expiracao();
-        this.expiracaoInterna = propriedades.jwt().expiracaoInterna();
         this.emissor = agenciaConfig.getNomeAgencia();
     }
 
     public String gerarTokenCliente(Usuario usuario) {
         return gerar(usuario.usuario(), usuario.nome(), TipoToken.CLIENTE, expiracao);
-    }
-
-    public String gerarTokenInterno() {
-        return gerar(emissor, "Agencia " + emissor, TipoToken.SISTEMA, expiracaoInterna);
     }
 
     public String gerarTokenExpirado(String sujeito) {

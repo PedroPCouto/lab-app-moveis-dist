@@ -31,7 +31,7 @@ class ContaServiceTest {
     @BeforeEach
     void preparar(@TempDir Path pastaTemporaria) throws IOException {
         var propriedades = new IceibankProperties(0, 0, pastaTemporaria.toString(),
-                new IceibankProperties.Jwt(IceibankProperties.SEGREDO_PADRAO, null, null), List.of());
+                new IceibankProperties.Jwt(IceibankProperties.SEGREDO_PADRAO, null), List.of());
         AgenciaConfig config = new AgenciaConfig(propriedades);
         RegistroEventos registro = new RegistroEventos("agencia-0", pastaTemporaria, JsonMapper.builder().build());
         contaService = new ContaService(config, new RelogioVetorial(0, AgenciaConfig.NUMERO_AGENCIAS), registro);
