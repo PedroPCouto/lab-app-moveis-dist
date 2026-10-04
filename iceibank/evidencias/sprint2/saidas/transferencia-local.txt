@@ -1,0 +1,14 @@
+Data/hora desta execucao: Sun Oct  4 09:49:26     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ TRANSFERENCIA LOCAL (conta 0 -> conta 3, ambas na agencia 0: nao passa pelo RabbitMQ)
+==================================================================
+
+--- Transferindo R$ 40,00 ---
+{"mensagem":"Transferencia concluida (mesma agencia).","escopo":"LOCAL","idOrigem":0,"idDestino":3,"valor":40,"saldoOrigem":160.00,"agenciaDestino":0,"timestampVetorial":[5,0,0],"idTransferencia":"7f344dd9-f644-481b-ba81-5afca803aac7"}
+HTTP 200
+
+--- Eventos gravados pela agencia 0 (dois eventos LOCAIS: so a posicao 0 do vetor anda) ---
+{"tipo":"TRANSFERENCIA_DEBITO","timestampVetorial":[4,0,0],"detalhes":{"idTransferencia":"7f344dd9-f644-481b-ba81-5afca803aac7","idOrigem":0,"idDestino":3,"valor":40,"agenciaDestino":0,"novoSaldo":160.00}}
+{"tipo":"TRANSFERENCIA_CREDITO","timestampVetorial":[5,0,0],"detalhes":{"idTransferencia":"7f344dd9-f644-481b-ba81-5afca803aac7","idOrigem":0,"idDestino":3,"valor":40,"novoSaldo":95.00}}

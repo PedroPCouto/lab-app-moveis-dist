@@ -82,7 +82,7 @@ parte_resiliencia() {
   passo "Ninguem consumiu: a mensagem esta retida na fila duravel da agencia 1 (visto pela agencia 0)"
   status_resumido 0
   passo "Subindo a agencia 1 de novo (processo novo: as contas em memoria se perderam)"
-  "$RAIZ/scripts/subir-agencias.sh" >/dev/null
+  "$RAIZ/scripts/subir-agencias.sh" >/dev/null 2>&1 </dev/null
   sleep 3
   passo "Log da agencia 1 ao reconectar no RabbitMQ"
   log_da_agencia 1 3

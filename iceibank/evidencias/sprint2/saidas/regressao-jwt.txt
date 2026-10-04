@@ -1,0 +1,42 @@
+Data/hora desta execucao: Sun Oct  4 09:49:39     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ JWT (Sprint 1) - CENARIO (a): requisicao SEM token
+==================================================================
+
+--- GET /contas/0 sem o cabecalho Authorization ---
+{"erro":"Token ausente. Envie o cabecalho Authorization: Bearer <token>."}
+HTTP 401
+
+--- POST /transferencias sem token ---
+{"erro":"Token ausente. Envie o cabecalho Authorization: Bearer <token>."}
+HTTP 401
+
+--- A rota publica de health-check continua acessivel (nao mexe em conta) ---
+{"situacao":"no ar","idAgencia":0,"porta":4000,"numeroAgencias":3,"relogioVetorial":[7,0,0],"quantidadeContas":2,"contas":[0,3],"eventosRegistrados":7,"filas":{"fila-agencia-0":0,"fila-agencia-0.mortas":0,"fila-agencia-1":0,"fila-agencia-1.mortas":0,"fila-agencia-2":0,"fila-agencia-2.mortas":0},"horaParede":"2026-10-04T12:49:42.360089800Z"}
+HTTP 200
+
+==================================================================
+ JWT (Sprint 1) - CENARIO (b): requisicao COM token valido
+==================================================================
+
+--- GET /contas/0 com o token ---
+{"id":0,"nomeAluno":"Ana","dono":"ana","saldo":130.00}
+HTTP 200
+
+--- Senha errada nao emite token ---
+{"erro":"Usuario ou senha invalidos."}
+HTTP 401
+
+==================================================================
+ JWT (Sprint 1) - CENARIO (c): requisicao com token EXPIRADO
+==================================================================
+
+--- GET /contas/0 com o token expirado ---
+{"erro":"Token expirado. Faca login novamente."}
+HTTP 401
+
+--- A rota interna do Sprint 1 (/creditar-remoto) nao existe mais: o credito vem pela fila ---
+{"erro":"No static resource contas/0/creditar-remoto."}
+HTTP 404

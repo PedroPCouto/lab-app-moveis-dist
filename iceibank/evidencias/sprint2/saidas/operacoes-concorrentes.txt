@@ -1,0 +1,11 @@
+Data/hora desta execucao: Sun Oct  4 09:49:25     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ PARTE D - OPERACOES INDEPENDENTES EM AGENCIAS DIFERENTES (sem relacao causal)
+==================================================================
+
+--- Um deposito em cada agencia, disparados ao mesmo tempo, sem mensagem entre elas ---
+  [agencia-0] 09:49:26.149 [Vetor [3, 0, 0]] DEPOSITO {id=3, valor=5, novoSaldo=55.00}
+  [agencia-1] 09:49:26.158 [Vetor [0, 2, 0]] DEPOSITO {id=1, valor=5, novoSaldo=85.00}
+  [agencia-2] 09:49:26.173 [Vetor [0, 0, 2]] DEPOSITO {id=2, valor=5, novoSaldo=125.00}

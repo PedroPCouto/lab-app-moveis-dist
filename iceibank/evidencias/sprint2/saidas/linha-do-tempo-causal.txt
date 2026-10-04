@@ -1,0 +1,93 @@
+Data/hora desta execucao: Sun Oct  4 09:50:57     2026
+Maquina: Pedreo-PC   Usuario: Brigh
+
+==================================================================
+ PARTE D - LINHA DO TEMPO CAUSAL (relogio vetorial)
+==================================================================
+=== Linha do tempo (ordenada por hora de parede) ===
+[agencia-0] vetor=[1,0,0]   CRIAR_CONTA                  {"id":0,"nomeAluno":"Ana","dono":"ana","saldoInicial":200.0}
+[agencia-0] vetor=[2,0,0]   CRIAR_CONTA                  {"id":3,"nomeAluno":"Ana (2a conta)","dono":"ana","saldoInicial":50.0}
+[agencia-1] vetor=[0,1,0]   CRIAR_CONTA                  {"id":1,"nomeAluno":"Bruno","dono":"bruno","saldoInicial":80.0}
+[agencia-2] vetor=[0,0,1]   CRIAR_CONTA                  {"id":2,"nomeAluno":"Carla","dono":"carla","saldoInicial":120.0}
+[agencia-0] vetor=[3,0,0]   DEPOSITO                     {"id":3,"valor":5,"novoSaldo":55.0}
+[agencia-1] vetor=[0,2,0]   DEPOSITO                     {"id":1,"valor":5,"novoSaldo":85.0}
+[agencia-2] vetor=[0,0,2]   DEPOSITO                     {"id":2,"valor":5,"novoSaldo":125.0}
+[agencia-0] vetor=[4,0,0]   TRANSFERENCIA_DEBITO         {"idTransferencia":"7f344dd9","idOrigem":0,"idDestino":3,"valor":40,"agenciaDestino":0,"novoSaldo":160.0}
+[agencia-0] vetor=[5,0,0]   TRANSFERENCIA_CREDITO        {"idTransferencia":"7f344dd9","idOrigem":0,"idDestino":3,"valor":40,"novoSaldo":95.0}
+[agencia-0] vetor=[6,0,0]   TRANSFERENCIA_DEBITO         {"idTransferencia":"4d20eb0b","idOrigem":0,"idDestino":1,"valor":30,"agenciaDestino":1,"novoSaldo":130.0}
+[agencia-0] vetor=[7,0,0]   TRANSFERENCIA_ENVIADA        {"idTransferencia":"4d20eb0b","idOrigem":0,"idDestino":1,"valor":30,"agenciaDestino":1,"routingKey":"agencia.1.creditar"}
+[agencia-1] vetor=[7,3,0]   TRANSFERENCIA_CREDITO_REMOTO {"idTransferencia":"4d20eb0b","idConta":1,"valor":30,"origemAgencia":0,"vetorRecebido":[7,0,0],"novoSaldo":115.0}
+[agencia-0] vetor=[8,0,0]   TRANSFERENCIA_DEBITO         {"idTransferencia":"614b73c3","idOrigem":0,"idDestino":1,"valor":10,"agenciaDestino":1,"novoSaldo":120.0}
+[agencia-0] vetor=[9,0,0]   TRANSFERENCIA_ENVIADA        {"idTransferencia":"614b73c3","idOrigem":0,"idDestino":1,"valor":10,"agenciaDestino":1,"routingKey":"agencia.1.creditar"}
+[agencia-1] vetor=[9,4,0]   CREDITO_REMOTO_FALHOU        {"idTransferencia":"614b73c3","idConta":1,"valor":10,"origemAgencia":0,"vetorRecebido":[9,0,0],"motivo":"conta nao encontrada"}
+[agencia-1] vetor=[9,5,0]   CRIAR_CONTA                  {"id":1,"nomeAluno":"Bruno","dono":"bruno","saldoInicial":0.0}
+[agencia-1] vetor=[9,6,0]   TRANSFERENCIA_CREDITO_REMOTO {"idTransferencia":"614b73c3","idConta":1,"valor":10,"origemAgencia":0,"vetorRecebido":[9,0,0],"novoSaldo":10.0}
+[agencia-1] vetor=[9,7,0]   MENSAGENS_MORTAS_REPROCESSADAS {"fila":"fila-agencia-1.mortas","quantidade":1}
+
+=== Pares de eventos CONCORRENTES entre agencias diferentes ===
+[agencia-0] CRIAR_CONTA                  [1,0,0]    x  [agencia-1] CRIAR_CONTA                  [0,1,0]
+[agencia-0] CRIAR_CONTA                  [1,0,0]    x  [agencia-2] CRIAR_CONTA                  [0,0,1]
+[agencia-0] CRIAR_CONTA                  [1,0,0]    x  [agencia-1] DEPOSITO                     [0,2,0]
+[agencia-0] CRIAR_CONTA                  [1,0,0]    x  [agencia-2] DEPOSITO                     [0,0,2]
+[agencia-0] CRIAR_CONTA                  [2,0,0]    x  [agencia-1] CRIAR_CONTA                  [0,1,0]
+[agencia-0] CRIAR_CONTA                  [2,0,0]    x  [agencia-2] CRIAR_CONTA                  [0,0,1]
+[agencia-0] CRIAR_CONTA                  [2,0,0]    x  [agencia-1] DEPOSITO                     [0,2,0]
+[agencia-0] CRIAR_CONTA                  [2,0,0]    x  [agencia-2] DEPOSITO                     [0,0,2]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-2] CRIAR_CONTA                  [0,0,1]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] DEPOSITO                     [3,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-2] DEPOSITO                     [0,0,2]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [4,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_CREDITO        [5,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [6,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [7,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [8,0,0]
+[agencia-1] CRIAR_CONTA                  [0,1,0]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [9,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] DEPOSITO                     [3,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] DEPOSITO                     [0,2,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_DEBITO         [4,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_CREDITO        [5,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_DEBITO         [6,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [7,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_DEBITO         [8,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [9,0,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] CREDITO_REMOTO_FALHOU        [9,4,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] CRIAR_CONTA                  [9,5,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [9,6,0]
+[agencia-2] CRIAR_CONTA                  [0,0,1]    x  [agencia-1] MENSAGENS_MORTAS_REPROCESSADAS [9,7,0]
+[agencia-0] DEPOSITO                     [3,0,0]    x  [agencia-1] DEPOSITO                     [0,2,0]
+[agencia-0] DEPOSITO                     [3,0,0]    x  [agencia-2] DEPOSITO                     [0,0,2]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-2] DEPOSITO                     [0,0,2]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [4,0,0]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_CREDITO        [5,0,0]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [6,0,0]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [7,0,0]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [8,0,0]
+[agencia-1] DEPOSITO                     [0,2,0]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [9,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_DEBITO         [4,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_CREDITO        [5,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_DEBITO         [6,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [7,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_DEBITO         [8,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [9,0,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-1] CREDITO_REMOTO_FALHOU        [9,4,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-1] CRIAR_CONTA                  [9,5,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [9,6,0]
+[agencia-2] DEPOSITO                     [0,0,2]    x  [agencia-1] MENSAGENS_MORTAS_REPROCESSADAS [9,7,0]
+[agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]    x  [agencia-0] TRANSFERENCIA_DEBITO         [8,0,0]
+[agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]    x  [agencia-0] TRANSFERENCIA_ENVIADA        [9,0,0]
+
+=== Transferencias entre agencias: envio x recebimento (devem ser causais) ===
+4d20eb0b  [agencia-0] TRANSFERENCIA_DEBITO [6,0,0]  ->  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]  : ANTES (aconteceu-antes, NAO concorrente)
+4d20eb0b  [agencia-0] TRANSFERENCIA_ENVIADA [7,0,0]  ->  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [7,3,0]  : ANTES (aconteceu-antes, NAO concorrente)
+614b73c3  [agencia-0] TRANSFERENCIA_DEBITO [8,0,0]  ->  [agencia-1] CREDITO_REMOTO_FALHOU [9,4,0]  : ANTES (aconteceu-antes, NAO concorrente)
+614b73c3  [agencia-0] TRANSFERENCIA_DEBITO [8,0,0]  ->  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [9,6,0]  : ANTES (aconteceu-antes, NAO concorrente)
+614b73c3  [agencia-0] TRANSFERENCIA_ENVIADA [9,0,0]  ->  [agencia-1] CREDITO_REMOTO_FALHOU [9,4,0]  : ANTES (aconteceu-antes, NAO concorrente)
+614b73c3  [agencia-0] TRANSFERENCIA_ENVIADA [9,0,0]  ->  [agencia-1] TRANSFERENCIA_CREDITO_REMOTO [9,6,0]  : ANTES (aconteceu-antes, NAO concorrente)
+
+=== Resumo ===
+Eventos no total ......................... 18
+Pares de agencias diferentes comparados .. 95
+  concorrentes (nenhum influenciou o outro) 52
+  causalmente relacionados ............... 43
