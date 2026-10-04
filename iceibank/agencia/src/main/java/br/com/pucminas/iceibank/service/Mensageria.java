@@ -14,6 +14,8 @@ import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
+import com.rabbitmq.client.GetResponse;
+
 import tools.jackson.databind.ObjectMapper;
 
 import br.com.pucminas.iceibank.config.AgenciaConfig;
@@ -61,9 +63,46 @@ public class Mensageria {
         Map<String, Long> filas = new LinkedHashMap<>();
         for (int id = 0; id < AgenciaConfig.NUMERO_AGENCIAS; id++) {
             String fila = MensageriaConfig.nomeFila(id);
+            String filaMortas = MensageriaConfig.nomeFilaMortas(id);
             filas.put(fila, mensagensProntas(fila));
+            filas.put(filaMortas, mensagensProntas(filaMortas));
         }
         return filas;
+    }
+
+    /**
+     * Funcionalidade adicional: devolve as mensagens mortas desta agencia para a exchange
+     * principal, para que o consumidor tente aplicar o credito de novo (por exemplo, depois
+     * que a conta foi recriada). Cada mensagem so sai da fila de mortas (ack) depois que o
+     * broker confirmou a republicacao; se algo falhar no meio, ela continua la.
+     *
+     * <p>Move no maximo o que havia na fila no inicio: se a conta ainda nao existir, a
+     * mensagem volta a morrer e espera o proximo reprocessamento, sem loop.
+     */
+    public int reprocessarMortas(int idAgencia) {
+        String filaMortas = MensageriaConfig.nomeFilaMortas(idAgencia);
+        String routingKey = MensageriaConfig.routingKeyCredito(idAgencia);
+        Long pendentes = mensagensProntas(filaMortas);
+        if (pendentes == null || pendentes == 0) {
+            return 0;
+        }
+
+        Integer movidas = rabbitTemplate.execute(canal -> {
+            canal.confirmSelect();
+            int total = 0;
+            for (long i = 0; i < pendentes; i++) {
+                GetResponse morta = canal.basicGet(filaMortas, false);
+                if (morta == null) {
+                    break;
+                }
+                canal.basicPublish(MensageriaConfig.EXCHANGE, routingKey, morta.getProps(), morta.getBody());
+                canal.waitForConfirmsOrDie(ESPERA_CONFIRMACAO.toMillis());
+                canal.basicAck(morta.getEnvelope().getDeliveryTag(), false);
+                total++;
+            }
+            return total;
+        });
+        return movidas == null ? 0 : movidas;
     }
 
     private Long mensagensProntas(String fila) {

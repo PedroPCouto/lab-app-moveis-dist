@@ -126,6 +126,13 @@ public class TransferenciaService {
         }
     }
 
+    public int reprocessarCreditosMortos() {
+        int reprocessadas = mensageria.reprocessarMortas(config.getIdAgencia());
+        registro.registrar("MENSAGENS_MORTAS_REPROCESSADAS", relogio.eventoLocal(), ContaService.detalhes(
+                "fila", MensageriaConfig.nomeFilaMortas(config.getIdAgencia()), "quantidade", reprocessadas));
+        return reprocessadas;
+    }
+
     /**
      * Aplica um credito vindo de outra agencia pelo RabbitMQ. Devolve {@code false} quando
      * a conta nao existe aqui - por exemplo, porque a agencia reiniciou e perdeu as contas
