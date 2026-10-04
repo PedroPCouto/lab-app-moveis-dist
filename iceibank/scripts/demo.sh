@@ -93,6 +93,25 @@ parte_resiliencia() {
   echo
   echo "  >>> A mensagem NAO se perdeu: ficou na fila e foi entregue quando a agencia 1 voltou."
   echo "  >>> Mas a conta 1 vivia so em memoria e sumiu no reinicio: o credito nao tinha onde ser aplicado."
+  echo "  >>> Com a dead-letter queue (funcionalidade adicional), ele foi para fila-agencia-1.mortas."
+}
+
+parte_mensagens_mortas() {
+  titulo "FUNCIONALIDADE ADICIONAL - DEAD-LETTER QUEUE (continuacao da resiliencia)"
+  fazer_login
+  passo "O credito que nao achou a conta 1 nao foi descartado: esta na fila de mortas da agencia 1"
+  status_resumido 1
+  passo "Recriando a conta 1 na agencia 1 (bruno, saldo inicial 0)"
+  chamar POST "$(url_da_agencia 1)/contas" "$BRUNO" '{"id":1,"nomeAluno":"Bruno","saldoInicial":0}'
+  passo "Reprocessando as mensagens mortas da agencia 1"
+  chamar POST "$(url_da_agencia 1)/mensagens-mortas/reprocessar" "$BRUNO"
+  sleep 2
+  passo "Log da agencia 1: a mensagem volta para a fila e agora o credito e aplicado"
+  log_da_agencia 1 3
+  passo "Saldo da conta 1: os R$ 10,00 da transferencia feita com a agencia fora do ar chegaram"
+  chamar GET "$(url_da_agencia 1)/contas/1" "$BRUNO"
+  passo "Filas depois do reprocessamento"
+  status_resumido 1
 }
 
 parte_linha_do_tempo() {
@@ -144,6 +163,7 @@ case "${1:-tudo}" in
   local)          parte_local ;;
   entre-agencias) parte_entre_agencias ;;
   resiliencia)    parte_resiliencia ;;
+  mortas)         parte_mensagens_mortas ;;
   linha-do-tempo) parte_linha_do_tempo ;;
   auth)                parte_auth ;;
   auth-sem-token)      parte_auth_sem_token ;;
@@ -151,6 +171,6 @@ case "${1:-tudo}" in
   auth-token-expirado) parte_auth_token_expirado ;;
   tudo)
     parte_preparar; parte_concorrentes; parte_local; parte_entre_agencias
-    parte_auth; parte_resiliencia; parte_linha_do_tempo ;;
+    parte_auth; parte_resiliencia; parte_mensagens_mortas; parte_linha_do_tempo ;;
   *) echo "Parte desconhecida: $1"; exit 1 ;;
 esac
