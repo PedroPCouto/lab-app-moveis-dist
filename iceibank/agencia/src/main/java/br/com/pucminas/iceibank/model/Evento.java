@@ -5,7 +5,7 @@ import java.util.Map;
 public record Evento(
         String agencia,
         String tipo,
-        int timestampLamport,
+        int[] timestampVetorial,
         String horaParede,
         Map<String, Object> detalhes) {
 }

@@ -7,6 +7,6 @@ import jakarta.validation.constraints.Positive;
 
 public record CreditoRemotoRequest(
         @NotNull(message = "e obrigatorio") @Positive(message = "deve ser maior que zero") BigDecimal valor,
-        @NotNull(message = "e obrigatorio") Integer timestampLamport,
+        @NotNull(message = "e obrigatorio") int[] vetorEnvio,
         @NotNull(message = "e obrigatorio") Integer origemAgencia) {
 }

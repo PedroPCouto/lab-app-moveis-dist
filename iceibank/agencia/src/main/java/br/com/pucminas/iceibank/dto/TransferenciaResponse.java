@@ -10,5 +10,5 @@ public record TransferenciaResponse(
         BigDecimal valor,
         BigDecimal saldoOrigem,
         int agenciaDestino,
-        int timestampLamport) {
+        int[] timestampVetorial) {
 }

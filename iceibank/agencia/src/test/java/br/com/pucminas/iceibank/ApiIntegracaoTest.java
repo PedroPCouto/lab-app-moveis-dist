@@ -107,7 +107,7 @@ class ApiIntegracaoTest {
         mockMvc.perform(post("/contas/0/creditar-remoto")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"valor\":10,\"timestampLamport\":5,\"origemAgencia\":1}"))
+                        .content("{\"valor\":10,\"vetorEnvio\":[0,5,0],\"origemAgencia\":1}"))
                 .andExpect(status().isForbidden());
     }
 
@@ -115,7 +115,7 @@ class ApiIntegracaoTest {
     void rotaInternaSemTokenRetorna401() throws Exception {
         mockMvc.perform(post("/contas/0/creditar-remoto")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"valor\":10,\"timestampLamport\":5,\"origemAgencia\":1}"))
+                        .content("{\"valor\":10,\"vetorEnvio\":[0,5,0],\"origemAgencia\":1}"))
                 .andExpect(status().isUnauthorized());
     }
 }

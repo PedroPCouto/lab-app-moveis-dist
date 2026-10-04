@@ -8,10 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.slf4j.Logger;
@@ -49,18 +51,18 @@ public class RegistroEventos {
         this.caminhoArquivo = pastaDados.resolve("eventos-" + nomeAgencia + ".jsonl");
     }
 
-    public Evento registrar(String tipo, int timestampLamport, Map<String, Object> detalhes) {
+    public Evento registrar(String tipo, int[] timestampVetorial, Map<String, Object> detalhes) {
         Evento evento = new Evento(
                 nomeAgencia,
                 tipo,
-                timestampLamport,
+                timestampVetorial,
                 Instant.now().toString(),
                 new LinkedHashMap<>(detalhes));
 
         gravar(evento);
         guardarEmMemoria(evento);
 
-        log.info("[Lamport {}] {} {}", timestampLamport, tipo, detalhes);
+        log.info("[Vetor {}] {} {}", Arrays.toString(timestampVetorial), tipo, detalhes);
         return evento;
     }
 
@@ -78,6 +80,31 @@ public class RegistroEventos {
         emMemoria.addLast(evento);
         while (emMemoria.size() > MAX_EM_MEMORIA) {
             emMemoria.pollFirst();
+        }
+    }
+
+    public Optional<int[]> ultimoVetorRegistrado() {
+        if (!Files.exists(caminhoArquivo)) {
+            return Optional.empty();
+        }
+        List<String> linhas;
+        try {
+            linhas = Files.readAllLines(caminhoArquivo, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Nao foi possivel ler " + caminhoArquivo, e);
+        }
+        return linhas.reversed().stream()
+                .filter(linha -> !linha.isBlank())
+                .findFirst()
+                .map(this::vetorDaLinha);
+    }
+
+    private int[] vetorDaLinha(String linha) {
+        try {
+            return mapper.readValue(linha, Evento.class).timestampVetorial();
+        } catch (RuntimeException formatoAntigo) {
+            // log do Sprint 1 (timestampLamport, sem vetor): nao ha o que restaurar
+            return null;
         }
     }
 
