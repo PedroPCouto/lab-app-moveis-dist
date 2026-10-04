@@ -1,6 +1,8 @@
 package br.com.pucminas.iceibank.service;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -146,7 +148,7 @@ public class TransferenciaService {
             registro.registrar("CREDITO_REMOTO_FALHOU", ts, ContaService.detalhes(
                     "idTransferencia", mensagem.idTransferencia(), "idConta", mensagem.idConta(),
                     "valor", mensagem.valor(), "origemAgencia", mensagem.origemAgencia(),
-                    "vetorRecebido", mensagem.vetorEnvio(), "motivo", "conta nao encontrada"));
+                    "vetorRecebido", comoLista(mensagem.vetorEnvio()), "motivo", "conta nao encontrada"));
             return false;
         }
 
@@ -156,8 +158,13 @@ public class TransferenciaService {
             registro.registrar("TRANSFERENCIA_CREDITO_REMOTO", ts, ContaService.detalhes(
                     "idTransferencia", mensagem.idTransferencia(), "idConta", mensagem.idConta(),
                     "valor", mensagem.valor(), "origemAgencia", mensagem.origemAgencia(),
-                    "vetorRecebido", mensagem.vetorEnvio(), "novoSaldo", conta.getSaldo()));
+                    "vetorRecebido", comoLista(mensagem.vetorEnvio()), "novoSaldo", conta.getSaldo()));
         }
         return true;
+    }
+
+    // Lista em vez de int[] nos detalhes: o log de console usa toString(), e int[] sairia "[I@1b67bb0f".
+    private static List<Integer> comoLista(int[] vetor) {
+        return Arrays.stream(vetor).boxed().toList();
     }
 }
