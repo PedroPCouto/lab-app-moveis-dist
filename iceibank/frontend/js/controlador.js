@@ -26,13 +26,15 @@
             id: agencia.id,
             noAr: true,
             relogioVetorial: status.relogioVetorial,
-            quantidadeContas: status.quantidadeContas
+            quantidadeContas: status.quantidadeContas,
+            filas: status.filas
           };
         })
         .catch(function () { return { id: agencia.id, noAr: false }; });
     });
     return Promise.all(consultas).then(function (situacoes) {
       Visao.renderizarStatusDasAgencias(situacoes, Modelo.estado.idAgencia);
+      Visao.renderizarFilas(Modelo.estado.idAgencia, situacoes[Modelo.estado.idAgencia].filas);
     });
   }
 
@@ -166,6 +168,21 @@
           + 'Saldo da origem: ' + Visao.moeda(resultado.saldoOrigem)
           + '  |  Vetor do evento: ' + JSON.stringify(resultado.timestampVetorial));
         atualizarTudo();
+      })
+      .catch(tratarErro);
+  });
+
+  elemento('botaoReprocessar').addEventListener('click', function () {
+    Visao.limparMensagem();
+    Modelo.reprocessarMensagensMortas()
+      .then(function (resultado) {
+        Visao.mostrarMensagem(resultado.reprocessadas > 0 ? 'ok' : 'alerta',
+          resultado.reprocessadas > 0
+            ? resultado.reprocessadas + ' mensagem(ns) morta(s) devolvida(s) para a fila da agencia '
+              + Modelo.estado.idAgencia + '. O credito e aplicado assim que for consumido.'
+            : 'Nenhuma mensagem morta na agencia ' + Modelo.estado.idAgencia + '.');
+        // o consumo e assincrono: espera um instante antes de reler saldos e filas
+        setTimeout(atualizarTudo, 1000);
       })
       .catch(tratarErro);
   });

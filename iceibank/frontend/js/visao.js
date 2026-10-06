@@ -134,6 +134,32 @@ window.Visao = (function () {
     });
   }
 
+  function renderizarFilas(idAgencia, filas) {
+    var corpo = elemento('corpoFilas');
+    corpo.innerHTML = '';
+    var nomes = [];
+    for (var id = 0; id < Modelo.NUMERO_AGENCIAS; id++) {
+      nomes.push('fila-agencia-' + id, 'fila-agencia-' + id + '.mortas');
+    }
+    nomes.forEach(function (nome) {
+      var linha = document.createElement('tr');
+      if (nome.indexOf('fila-agencia-' + idAgencia) === 0) { linha.className = 'fila--atual'; }
+      var celulaNome = document.createElement('td');
+      var codigo = document.createElement('code');
+      codigo.textContent = nome;
+      celulaNome.appendChild(codigo);
+
+      var celulaQuantidade = document.createElement('td');
+      celulaQuantidade.className = 'saldo';
+      celulaQuantidade.style.textAlign = 'right';
+      var quantidade = filas ? filas[nome] : undefined;
+      celulaQuantidade.textContent = quantidade === undefined || quantidade === null ? '?' : quantidade;
+
+      linha.append(celulaNome, celulaQuantidade);
+      corpo.appendChild(linha);
+    });
+  }
+
   function definirDica(id, texto) { elemento(id).textContent = texto; }
 
   function limparFormulario(id) { elemento(id).reset(); }
@@ -148,6 +174,7 @@ window.Visao = (function () {
     renderizarContas: renderizarContas,
     renderizarStatusDasAgencias: renderizarStatusDasAgencias,
     renderizarHistorico: renderizarHistorico,
+    renderizarFilas: renderizarFilas,
     definirDica: definirDica,
     limparFormulario: limparFormulario
   };
