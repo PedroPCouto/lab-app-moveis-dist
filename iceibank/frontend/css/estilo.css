@@ -102,6 +102,7 @@ table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--borda); }
 th { color: var(--texto-fraco); font-weight: 600; font-size: .78rem; text-transform: uppercase; }
 td.saldo { font-variant-numeric: tabular-nums; font-weight: 600; }
+tr.fila--atual code, tr.fila--atual td { color: var(--destaque); }
 
 .vazio { color: var(--texto-fraco); font-size: .9rem; font-style: italic; }
 

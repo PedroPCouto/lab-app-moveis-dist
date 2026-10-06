@@ -137,6 +137,21 @@
         </form>
       </div>
 
+      <div class="cartao">
+        <h2>Filas no RabbitMQ <small class="vazio">(funcionalidade adicional)</small></h2>
+        <table>
+          <thead>
+            <tr><th>Fila</th><th style="text-align:right">Mensagens</th></tr>
+          </thead>
+          <tbody id="corpoFilas"></tbody>
+        </table>
+        <p class="vazio">
+          Creditos que chegaram para uma conta inexistente ficam na fila de mortas.
+          Recrie a conta e reprocesse para aplica-los (so as filas da agencia atual, em destaque).
+        </p>
+        <button id="botaoReprocessar" type="button">Reprocessar mensagens mortas desta agencia</button>
+      </div>
+
       <div class="cartao cartao--largo">
         <h2>Historico da conta <small class="vazio">(funcionalidade adicional)</small></h2>
         <form id="formularioHistorico" class="linha" style="align-items:flex-end">

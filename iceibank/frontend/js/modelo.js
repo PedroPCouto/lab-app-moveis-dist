@@ -144,6 +144,10 @@ window.Modelo = (function () {
     return requisitar('GET', '/contas/' + id + '/historico?limite=' + (limite || 20), null);
   }
 
+  function reprocessarMensagensMortas() {
+    return requisitar('POST', '/mensagens-mortas/reprocessar', null);
+  }
+
   return {
     NUMERO_AGENCIAS: NUMERO_AGENCIAS,
     estado: estado,
@@ -161,6 +165,7 @@ window.Modelo = (function () {
     depositar: depositar,
     sacar: sacar,
     transferir: transferir,
-    historico: historico
+    historico: historico,
+    reprocessarMensagensMortas: reprocessarMensagensMortas
   };
 })();
