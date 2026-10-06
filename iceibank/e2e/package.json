@@ -1,0 +1,12 @@
+{
+  "name": "iceibank-e2e",
+  "private": true,
+  "description": "Testes ponta a ponta gravados (Playwright) do Sprint 2: mensageria, resiliencia e fila de mortas",
+  "scripts": {
+    "test": "playwright test",
+    "trace": "playwright show-trace"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}

@@ -48,3 +48,8 @@ desktop.ini
 # Python (scripts auxiliares)
 __pycache__/
 *.pyc
+
+# Testes ponta a ponta (Playwright): resultados, traces e relatorio sao gerados a cada
+# execucao; os videos que valem como evidencia sao copiados para evidencias/sprint2/videos.
+e2e/resultados/
+e2e/relatorio/
