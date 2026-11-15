@@ -1,0 +1,36 @@
+=== Parte A - eleicao inicial: as 3 agencias sobem juntas ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 15:47:55
+PS> scripts\sprint3.ps1 subir    # java -jar ... com AGENCIA_ID=0, 1 e 2, ao mesmo tempo
+As 3 agencias responderam em /status. Aguardando 6 s para a eleicao assentar...
+
+PS> Get-Date
+domingo, 15 de novembro de 2026 15:48:15
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4002/bully/lider" -Method Get
+idAgencia : 2   liderAtual : 2   eleicaoEmAndamento : False
+
+>>> As 3 agencias concordam: a lider e a agencia 2.
+
+=== "Tempestade" da subida: TORNOU_LIDER / LIDER_ANUNCIADO nos logs de console ===
+--- console da agencia 0 (agencia\data\agencia-0.out) ---
+15:48:09.434 : [Vetor [3, 0, 3]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+15:48:09.536 : [Vetor [4, 2, 8]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+15:48:09.548 : [Vetor [6, 2, 8]] AGUARDANDO_COORDENADOR {idAgencia=0, responderam=[1, 2]}
+15:48:09.560 : [Vetor [7, 2, 13]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+15:48:09.579 : [Vetor [8, 8, 18]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+--- console da agencia 1 (agencia\data\agencia-1.out) ---
+15:48:09.518 : [Vetor [2, 4, 4]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+15:48:09.544 : [Vetor [2, 5, 4]] AGUARDANDO_COORDENADOR {idAgencia=1, responderam=[2]}
+15:48:09.545 : [Vetor [2, 6, 9]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+15:48:09.560 : [Vetor [2, 9, 9]] AGUARDANDO_COORDENADOR {idAgencia=1, responderam=[2]}
+15:48:09.567 : [Vetor [5, 10, 15]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+15:48:09.587 : [Vetor [5, 11, 19]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+--- console da agencia 2 (agencia\data\agencia-2.out) ---
+15:48:09.102 : [Vetor [0, 0, 2]] TORNOU_LIDER {idAgencia=2}
+15:48:09.529 : [Vetor [0, 2, 7]] TORNOU_LIDER {idAgencia=2}
+15:48:09.554 : [Vetor [5, 2, 12]] TORNOU_LIDER {idAgencia=2}
+15:48:09.572 : [Vetor [5, 8, 17]] TORNOU_LIDER {idAgencia=2}

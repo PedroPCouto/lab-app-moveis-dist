@@ -36,6 +36,7 @@ function CorDaLinha([string]$linha) {
   $despida = $linha.Trim()
   if ($despida.StartsWith('===') -or $despida.StartsWith('---')) { return $CIANO }
   if ($despida.StartsWith('>>>')) { return $AMBAR }
+  if ($despida.StartsWith('PS>')) { return $CIANO }
   if ($despida.StartsWith('HTTP ')) {
     if ($despida -match '^HTTP 2') { return $VERDE } else { return $VERMELHO }
   }

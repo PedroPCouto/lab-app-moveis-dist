@@ -21,7 +21,8 @@ import com.jayway.jsonpath.JsonPath;
 @TestPropertySource(properties = {
         "iceibank.agencia-id=0",
         "iceibank.pasta-dados=${java.io.tmpdir}/iceibank-testes",
-        "spring.rabbitmq.listener.simple.auto-startup=false"
+        "spring.rabbitmq.listener.simple.auto-startup=false",
+        "iceibank.bully.habilitado=false"
 })
 class ApiIntegracaoTest {
     @Autowired

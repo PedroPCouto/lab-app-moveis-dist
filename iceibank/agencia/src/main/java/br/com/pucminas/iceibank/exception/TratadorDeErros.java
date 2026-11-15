@@ -41,6 +41,12 @@ public class TratadorDeErros {
         return ResponseEntity.badRequest().body(Map.of("erro", "Corpo da requisicao ausente ou mal formado."));
     }
 
+    // Ex.: vetor com numero errado de posicoes numa mensagem do Bully (RelogioVetorial.aoReceber).
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> tratarArgumentoInvalido(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", String.valueOf(e.getMessage())));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> tratarInesperado(Exception e) {
         // Rota inexistente, metodo nao suportado etc.: o proprio Spring ja sabe o status

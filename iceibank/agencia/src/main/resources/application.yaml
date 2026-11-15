@@ -27,6 +27,14 @@ iceibank:
   offset: ${OFFSET:0}
   agencia-id: ${AGENCIA_ID:0}
 
+  # Sprint 3: eleicao de lider (Bully) e heartbeat. Configuraveis por variavel de ambiente
+  # para os experimentos das perguntas da Parte B (heartbeat curto/longo, timeout).
+  bully:
+    habilitado: ${BULLY_HABILITADO:true}
+    intervalo-heartbeat: ${BULLY_HEARTBEAT_MS:3000}ms
+    timeout: ${BULLY_TIMEOUT_MS:1000}ms
+    host-agencias: ${AGENCIAS_HOST:localhost}
+
   jwt:
     segredo: ${JWT_SEGREDO:iceibank-sprint1-chave-de-laboratorio-nao-use-em-producao}
     expiracao: 30m

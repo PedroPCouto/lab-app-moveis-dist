@@ -24,7 +24,10 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtFilter extends OncePerRequestFilter {
     private static final String PREFIXO = "Bearer ";
 
-    private static final List<String> ROTAS_PUBLICAS = List.of("/auth/login", "/status", "/error");
+    // Sprint 3: as rotas do Bully sao chamadas por outras agencias (e pelo app, para o painel
+    // da lider), nao por pessoas usuarias - ficam publicas, como no roteiro.
+    private static final List<String> ROTAS_PUBLICAS = List.of("/auth/login", "/status", "/error",
+            "/bully/eleicao", "/bully/coordenador", "/bully/lider");
 
     private final JwtService jwtService;
     private final ObjectMapper mapper;
