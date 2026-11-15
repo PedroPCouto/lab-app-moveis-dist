@@ -5,8 +5,6 @@ import '../config.dart';
 import '../lideranca.dart';
 import '../modelos.dart';
 
-/// Funcionalidade adicional: agencias ativas + historico das trocas de lideranca vistas
-/// pelo app.
 class PainelCluster extends StatelessWidget {
   final SaudeAgencias saude;
   final Lideranca lideranca;
@@ -64,7 +62,7 @@ class PainelCluster extends StatelessWidget {
     final detalhe = s == null
         ? 'verificando...'
         : noAr
-        ? 'no ar - ${s.latenciaMs} ms - ${s.contas} contas - vetor ${vetorTexto(s.vetor ?? const [])}'
+        ? 'no ar - ${s.latenciaMs} ms${s.contas == null ? '' : ' - ${s.contas} contas - vetor ${vetorTexto(s.vetor ?? const [])}'}'
         : 'FORA DO AR (sem resposta as ${hora(s.verificadaEm)})';
     return Semantics(
       label: 'Agencia $id: ${s == null ? 'verificando' : (noAr ? 'no ar' : 'fora do ar')}${lider ? ', lider' : ''}',

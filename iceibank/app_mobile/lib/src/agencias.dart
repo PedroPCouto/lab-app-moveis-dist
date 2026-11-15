@@ -23,12 +23,6 @@ class SituacaoAgencia {
   });
 }
 
-/// Funcionalidade adicional do Sprint 3: quais das 3 agencias estao respondendo agora,
-/// nao so quem e a lider. Consulta `GET /status` (publica) das 3 em paralelo a cada 5 s.
-///
-/// O painel da lider responde "quem coordena"; este responde "quem esta vivo". Juntos
-/// mostram, por exemplo, a lider caindo (a 2 fica vermelha) e, segundos depois, o painel
-/// da lider trocando para a 1 - o heartbeat em acao, visto de fora.
 class SaudeAgencias extends ChangeNotifier {
   final ApiCliente _api;
   Timer? _timer;
@@ -56,20 +50,29 @@ class SaudeAgencias extends ChangeNotifier {
   Future<SituacaoAgencia> _verificar(int id) async {
     final relogio = Stopwatch()..start();
     try {
-      final status = await _api.status(id);
-      return SituacaoAgencia(
-        id: id,
-        noAr: true,
-        latenciaMs: relogio.elapsedMilliseconds,
-        vetor: (status['relogioVetorial'] as List?)?.map((v) => (v as num).toInt()).toList(),
-        contas: (status['quantidadeContas'] as num?)?.toInt(),
-        verificadaEm: DateTime.now(),
-      );
+      await _api.lider(id);
     } on ErroDeRede {
       return SituacaoAgencia(id: id, noAr: false, verificadaEm: DateTime.now());
     } on ErroApi {
       return SituacaoAgencia(id: id, noAr: false, verificadaEm: DateTime.now());
     }
+    final latencia = relogio.elapsedMilliseconds;
+    Map<String, dynamic>? status;
+    try {
+      status = await _api.status(id);
+    } on ErroDeRede {
+      status = null;
+    } on ErroApi {
+      status = null;
+    }
+    return SituacaoAgencia(
+      id: id,
+      noAr: true,
+      latenciaMs: latencia,
+      vetor: (status?['relogioVetorial'] as List?)?.map((v) => (v as num).toInt()).toList(),
+      contas: (status?['quantidadeContas'] as num?)?.toInt(),
+      verificadaEm: DateTime.now(),
+    );
   }
 
   @override

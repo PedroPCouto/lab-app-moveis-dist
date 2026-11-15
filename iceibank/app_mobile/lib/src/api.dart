@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 
 import 'config.dart';
 
-/// A agencia respondeu, mas com erro (4xx/5xx). `corpo` traz o JSON de erro inteiro -
-/// no 409 da sincronizacao, os vetores e a conta atual.
 class ErroApi implements Exception {
   final int status;
   final String mensagem;
@@ -18,8 +16,6 @@ class ErroApi implements Exception {
   String toString() => mensagem;
 }
 
-/// A agencia nao respondeu (sem rede, agencia fora do ar, timeout). Para o app, e o
-/// sinal de "guardar a operacao para depois" (Parte F).
 class ErroDeRede implements Exception {
   final int idAgencia;
   final String detalhe;
@@ -30,8 +26,6 @@ class ErroDeRede implements Exception {
   String toString() => 'Agencia $idAgencia nao respondeu ($detalhe).';
 }
 
-/// Cliente da mesma API REST que o frontend web do Sprint 1 usa. Como no frontend, o
-/// token vai em toda requisicao e as 3 agencias o aceitam (mesma chave de assinatura).
 class ApiCliente {
   ConfigAgencias config;
   String? token;
@@ -109,7 +103,6 @@ class ApiCliente {
     corpo: {'valor': centavos / 100},
   ) as Map<String, dynamic>;
 
-  /// A transferencia vai para a agencia da conta de ORIGEM (e ela quem debita).
   Future<Map<String, dynamic>> transferir(int origem, int destino, int centavos) async => await requisitar(
     'POST',
     ConfigAgencias.agenciaResponsavel(origem),
@@ -117,15 +110,13 @@ class ApiCliente {
     corpo: {'idOrigem': origem, 'idDestino': destino, 'valor': centavos / 100},
   ) as Map<String, dynamic>;
 
-  /// Parte E: `POST /contas/{id}/sincronizar`.
   Future<Map<String, dynamic>> sincronizar(int idConta, Map<String, dynamic> corpo) async =>
       await requisitar('POST', ConfigAgencias.agenciaResponsavel(idConta), '/contas/$idConta/sincronizar', corpo: corpo)
           as Map<String, dynamic>;
 
-  /// Parte D: `GET /bully/lider` (publica, sem token).
   Future<Map<String, dynamic>> lider(int agencia) async =>
       await requisitar('GET', agencia, '/bully/lider', timeout: Intervalos.timeoutConsulta) as Map<String, dynamic>;
 
   Future<Map<String, dynamic>> status(int agencia) async =>
-      await requisitar('GET', agencia, '/status', timeout: Intervalos.timeoutConsulta) as Map<String, dynamic>;
+      await requisitar('GET', agencia, '/status', timeout: Intervalos.timeoutOperacao) as Map<String, dynamic>;
 }
