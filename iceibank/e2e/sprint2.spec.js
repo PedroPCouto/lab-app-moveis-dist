@@ -170,11 +170,13 @@ test('teste A - transferencia entre agencias via RabbitMQ', async ({ page }) => 
   await page.click('#formularioTransferencia button[type=submit]');
   await expect(page.locator('#mensagem')).toContainText('publicada no RabbitMQ');
   const texto = await page.locator('#mensagem').textContent();
-  const [, posicaoOrigem] = texto.match(/Vetor do evento: \[(\d+),0,0\]/);
+  // Sprint 3: com o Bully, as agencias ja trocaram mensagens desde a subida, entao o vetor da
+  // agencia 0 nao e mais [N,0,0] - so a posicao 0 (a dela) importa para esta verificacao.
+  const [vetorEnvio, posicaoOrigem] = texto.match(/Vetor do evento: \[(\d+),\d+,\d+\]/);
   await legendar(page, `Resposta imediata: "publicada". 200 agora significa "o broker aceitou a mensagem",\n`
-    + `nao "o credito ja foi aplicado". O envio levou o vetor [${posicaoOrigem},0,0].`, 4000);
+    + `nao "o credito ja foi aplicado". O envio levou o vetor ${vetorEnvio.replace('Vetor do evento: ', '')}.`, 4000);
 
-  await atualizarAte(page, () => expect(pilula(page, 2)).toContainText(`vetor [${posicaoOrigem},0,`, { timeout: 1000 }));
+  await atualizarAte(page, () => expect(pilula(page, 2)).toContainText(`vetor [${posicaoOrigem},`, { timeout: 1000 }));
   await legendar(page, `A agencia 2 consumiu a mensagem: o vetor dela agora comeca com ${posicaoOrigem}\n`
     + '(regra 3: max posicao a posicao com o vetor recebido, +1 na propria posicao).', 4000);
 

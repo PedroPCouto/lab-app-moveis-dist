@@ -22,7 +22,7 @@ arquivos do professor). Checklist e critérios de avaliação em
 | Parte E — `/contas/{id}/sincronizar` + 409 | feito (inclui TRANSFERENCIA e idempotência) | `SincronizacaoService`, `ContaService.aplicarSincronizado`; `conflito-sincronizacao.png` |
 | Parte F — offline-first no app | feito | `banco.dart` (fila/sincronizar), `conectividade.dart`, `armazenamento.dart`; `app-offline.png`, `app-sincronizacao.png` |
 | 409 visível no app | feito (diálogo + cartão, decisão da pessoa) | `telas/pendentes.dart`; `app-conflito.png` |
-| Sem regressão (JWT, frontend web, mensageria/vetorial) | feito, **exceto** mensageria real (sem RabbitMQ nesta máquina) | `regressao-frontend-jwt.png`; testes Java |
+| Sem regressão (JWT, frontend web, mensageria/vetorial) | feito, inclusive mensageria real no CloudAMQP (suíte do Sprint 2, 3/3) | `regressao-frontend-jwt.png`; `videos/regressao-sprint2-*.webm`; testes Java |
 | Funcionalidade adicional | feito: painel do cluster no app (agências ativas + histórico de trocas de líder) | `agencias.dart`, `telas/painel_cluster.dart`; `funcionalidade-adicional.png` |
 | `evidencias/sprint3/` com os 8 prints | feito (+6 extras e vídeo `videos/sprint3-app.webm`) | |
 | RESPOSTAS.md (5.5, 6.4, 7.3, 8.3, 9.6, 10.3 + adicional) | feito | `RESPOSTAS.md` |
@@ -33,11 +33,12 @@ test`), **8 Playwright** (`e2e\rodar-sprint3.ps1`). Todos passando em 15/11/2026
 
 ## Pendências que dependem do usuário
 
-1. **Regressão da mensageria com RabbitMQ real.** A `RABBITMQ_URL` (CloudAMQP) não está
-   definida nesta máquina. Definir com
-   `[Environment]::SetEnvironmentVariable('RABBITMQ_URL','amqps://...','User')` e rodar
-   `e2e\rodar.ps1` (suíte do Sprint 2) — deve passar sem mudanças. **Nunca** gravar a URL em
-   arquivo.
+1. ~~Regressão da mensageria com RabbitMQ real~~ — **feita em 15/11/2026 18:47**: o usuário
+   forneceu a URL do CloudAMQP, gravada em `iceibank/.env.local` (fora do Git, a pedido dele);
+   `e2e\rodar.ps1` passou os 3 testes do Sprint 2 (vídeos em
+   `evidencias/sprint3/videos/regressao-sprint2-teste-{a,b,c}.webm`). Única mudança no teste:
+   a asserção `[N,0,0]` do vetor virou `[N,x,y]`, porque o Bully faz as agências trocarem
+   mensagens desde a subida.
 2. **Rodar o app num Android de verdade (opcional).** Não há emulador nem espaço em disco
    (~5 GB livres). O projeto `android/` está pronto (INTERNET, ACCESS_NETWORK_STATE,
    `usesCleartextTraffic`). Precisaria habilitar Android no Flutter
@@ -53,9 +54,13 @@ test`), **8 Playwright** (`e2e\rodar-sprint3.ps1`). Todos passando em 15/11/2026
   3.50.0, só artefatos **web**). Android/iOS/desktop desabilitados no `flutter config`.
   Não está no PATH: use `"$env:LOCALAPPDATA\AndroidDev\flutter\bin\flutter"`.
 - No Flutter 3.50 o Material saiu do SDK: o app importa `package:material_ui/material_ui.dart`.
-- **Sem RabbitMQ:** os scripts sobem as agências com `amqp://localhost` (sem broker) quando
-  não há `RABBITMQ_URL` — Bully, contas e sincronização funcionam; transferência entre
-  agências responde 503 com estorno; o console da agência mostra erros de conexão AMQP (normal).
+- **RabbitMQ (CloudAMQP):** credenciais em `iceibank/.env.local` (URL, host, usuário, vhost,
+  senha, portas), **fora do Git** (`.gitignore`; modelo versionado em `.env.exemplo`). Decisão
+  do usuário: cenário educacional, não quer reconfigurar a cada sessão. Todos os scripts
+  (`scripts/sprint3.ps1`, `scripts/comum.sh`, `e2e/rodar*.ps1`, `e2e/apoio/agencias.js`) leem o
+  arquivo quando `RABBITMQ_URL` não está no ambiente. Sem o arquivo, as agências sobem com
+  `amqp://localhost` (sem broker): só a transferência entre agências responde 503.
+  Painel da instância: https://customer.cloudamqp.com/ (plano Little Lemur).
 - Node 24; Playwright já instalado em `e2e/node_modules`.
 
 ## Como rodar (resumo)

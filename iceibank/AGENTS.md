@@ -20,5 +20,7 @@ Convenções:
 - Commits pequenos, no formato `tipo(escopo): descricao` dos roteiros.
 - Evidências em `evidencias/sprintN/`: prints reais com data/hora visível; as saídas em texto
   ficam em `evidencias/sprintN/saidas/`.
-- A `RABBITMQ_URL` contém senha: nunca grave em arquivo versionado nem passe em linha de comando.
+- A `RABBITMQ_URL` (CloudAMQP) está em `.env.local`, que fica **fora do Git** por decisão do
+  usuário (cenário educacional). Os scripts o leem sozinhos. Não o adicione ao Git, não o
+  copie para arquivos versionados e não passe a URL em linha de comando.
 - `agencia/data/` (logs) é gerado em tempo de execução e fica fora do Git.

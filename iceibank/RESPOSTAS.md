@@ -1412,10 +1412,18 @@ heartbeat e timeouts do Bully configuráveis por variável de ambiente.
   `obterVetorAtual` e o compare-and-increment); o `MesclarLogs` continua lendo os logs, que
   agora também têm eventos do Bully. Uma mudança pequena no `creditarRemoto`: o
   `aoReceber` passou para dentro da trava da conta, para o snapshot (saldo, vetor) ser
-  consistente. **O que não pude verificar nesta máquina:** a transferência entre agências
-  pelo RabbitMQ, porque a `RABBITMQ_URL` (CloudAMQP) não está configurada aqui; sem broker
-  ela responde 503 com estorno, que é o comportamento projetado no Sprint 2. A suíte
-  `e2e/rodar.ps1` do Sprint 2 cobre esse caminho assim que a variável for definida.
+  consistente.
+- **Mensageria real (CloudAMQP), 15/11/2026 18:47:** a suíte gravada do Sprint 2
+  (`e2e/rodar.ps1`) passou os 3 testes com as agências do Sprint 3 (com o Bully ligado):
+  transferência entre agências via RabbitMQ, agência de destino fora do ar (a mensagem
+  esperou na fila durável) e fila de mortas com reprocessamento. Vídeos em
+  `evidencias/sprint3/videos/regressao-sprint2-teste-{a,b,c}.webm`. Um ajuste foi necessário
+  no próprio teste, não no código: ele esperava que o vetor da agência 0 fosse `[N,0,0]` na
+  hora da transferência. Com o Bully, as três agências trocam mensagens de eleição logo ao
+  subir, então a agência 0 já "conhece" eventos das outras e o vetor vira `[N,x,y]`. É o
+  relógio vetorial funcionando como deveria (regra 3 aplicada às mensagens do Bully); a
+  verificação que importa — a agência 2, ao consumir, passa a ter a posição 0 igual à do
+  envio — continua no teste.
 
 ## Declaração de uso de IA
 

@@ -98,7 +98,9 @@ iceibank/
   $env:RABBITMQ_URL="amqps://usuario:senha@host.cloudamqp.com/vhost"       # PowerShell
   ```
   A agência se recusa a subir sem essa variável. A URL contém a senha: **nunca** a coloque em
-  arquivo versionado. (Alternativa local: `docker run -d -p 5672:5672 -p 15672:15672
+  arquivo versionado. *Sprint 3:* em vez de exportar a cada terminal, copie `.env.exemplo`
+  para `.env.local` (ignorado pelo Git) e preencha — todos os scripts o leem sozinhos.
+  (Alternativa local: `docker run -d -p 5672:5672 -p 15672:15672
   rabbitmq:3-management` e `RABBITMQ_URL=amqp://localhost`.)
 - `jq` e `curl` (usados pelos scripts de demonstração, em Git Bash no Windows).
 - Nenhum banco de dados: as contas vivem em memória (o que a Parte C explora de propósito).

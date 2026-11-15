@@ -7,6 +7,15 @@
 # sem broker (a transferencia entre agencias responde 503 - o resto funciona).
 param([string]$JavaHome = $env:JAVA_HOME, [switch]$Compilar)
 
+# Sem RABBITMQ_URL no terminal nem na variavel de usuario: le o .env.local do projeto (fora do Git).
+function UrlDoEnvLocal {
+  $arquivo = Join-Path (Split-Path $PSScriptRoot -Parent) '.env.local'
+  if (-not (Test-Path $arquivo)) { return $null }
+  $linha = Get-Content $arquivo | Where-Object { $_ -match '^RABBITMQ_URL=' } | Select-Object -First 1
+  if ($linha) { return $linha.Substring('RABBITMQ_URL='.Length).Trim() }
+  return $null
+}
+
 if (-not $JavaHome) {
   $jdk = Get-ChildItem "$env:LOCALAPPDATA\AndroidDev" -Directory -Filter 'jdk-25*' -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($jdk) { $JavaHome = $jdk.FullName }
@@ -14,6 +23,7 @@ if (-not $JavaHome) {
 if ($JavaHome) { $env:JAVA_HOME = $JavaHome }
 $url = $env:RABBITMQ_URL
 if (-not $url) { $url = [Environment]::GetEnvironmentVariable('RABBITMQ_URL', 'User') }
+if (-not $url) { $url = UrlDoEnvLocal }
 if ($url) { $env:RABBITMQ_URL = $url }
 
 $raiz = Split-Path $PSScriptRoot -Parent

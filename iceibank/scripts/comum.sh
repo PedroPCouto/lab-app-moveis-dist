@@ -6,6 +6,12 @@ AGENCIA_DIR="$RAIZ/agencia"
 JAR="$AGENCIA_DIR/target/iceibank-0.0.1-SNAPSHOT.jar"
 PID_DIR="$AGENCIA_DIR/data/.pids"
 
+# Sprint 3: sem RABBITMQ_URL no terminal, usa a do .env.local (fora do Git).
+if [ -z "${RABBITMQ_URL:-}" ] && [ -f "$RAIZ/.env.local" ]; then
+  RABBITMQ_URL="$(grep -m1 '^RABBITMQ_URL=' "$RAIZ/.env.local" | cut -d= -f2- | tr -d '\r')"
+  export RABBITMQ_URL
+fi
+
 OFFSET="${OFFSET:-0}"
 NUMERO_AGENCIAS=3
 

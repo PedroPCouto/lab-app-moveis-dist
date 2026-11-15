@@ -40,7 +40,16 @@ async function esperar(condicao, descricao, limiteMs = 90_000) {
 // exigirBroker=false (Sprint 3): sem RABBITMQ_URL as agencias sobem apontando para
 // amqp://localhost sem broker - Bully, contas e sincronizacao funcionam; so a transferencia
 // entre agencias responde 503.
+// Le RABBITMQ_URL do iceibank/.env.local (fora do Git) quando nao vier do ambiente.
+function urlDoEnvLocal() {
+  const arquivo = path.join(RAIZ, '.env.local');
+  if (!fs.existsSync(arquivo)) return null;
+  const linha = fs.readFileSync(arquivo, 'utf8').split(/\r?\n/).find((l) => l.startsWith('RABBITMQ_URL='));
+  return linha ? linha.slice('RABBITMQ_URL='.length).trim() : null;
+}
+
 function verificarPreRequisitos({ exigirBroker = true } = {}) {
+  if (!process.env.RABBITMQ_URL) process.env.RABBITMQ_URL = urlDoEnvLocal() || '';
   if (!process.env.RABBITMQ_URL) {
     if (exigirBroker) {
       throw new Error('RABBITMQ_URL nao definida. Rode pelo e2e/rodar.ps1, que le a variavel de usuario.');

@@ -58,3 +58,6 @@ e2e/relatorio/
 # evidencias/sprint3/videos) e o build do Flutter
 e2e/resultados-sprint3/
 app_mobile/build/
+
+# Credenciais locais (RabbitMQ/CloudAMQP) - modelo versionado em .env.exemplo
+.env.local

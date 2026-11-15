@@ -89,9 +89,19 @@ function Esperar([scriptblock]$condicao, [string]$descricao, [int]$segundos = 90
   throw "Tempo esgotado esperando: $descricao"
 }
 
+# Sem RABBITMQ_URL no terminal nem na variavel de usuario: le o .env.local do projeto (fora do Git).
+function UrlDoEnvLocal {
+  $arquivo = Join-Path $RAIZ '.env.local'
+  if (-not (Test-Path $arquivo)) { return $null }
+  $linha = Get-Content $arquivo | Where-Object { $_ -match '^RABBITMQ_URL=' } | Select-Object -First 1
+  if ($linha) { return $linha.Substring('RABBITMQ_URL='.Length).Trim() }
+  return $null
+}
+
 function RabbitUrl {
   $url = $env:RABBITMQ_URL
   if (-not $url) { $url = [Environment]::GetEnvironmentVariable('RABBITMQ_URL', 'User') }
+  if (-not $url) { $url = UrlDoEnvLocal }
   if (-not $url) {
     Write-Warning 'RABBITMQ_URL nao definida: subindo com amqp://localhost (sem broker). Bully e contas funcionam; transferencia entre agencias responde 503.'
     $url = 'amqp://localhost:5672'
