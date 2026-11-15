@@ -12,7 +12,7 @@
 	<artifactId>iceibank</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>iceibank-agencia</name>
-	<description>Agencia do ICEIBank - Sprint 2 (REST/MVC + JWT + mensageria RabbitMQ + relogio vetorial)</description>
+	<description>Agencia do ICEIBank - Sprint 3 (REST/MVC + JWT + RabbitMQ + relogio vetorial + eleicao de lider Bully + sincronizacao offline-first)</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -99,6 +99,16 @@
 						</goals>
 						<configuration>
 							<mainClass>br.com.pucminas.iceibank.tools.MesclarLogs</mainClass>
+						</configuration>
+					</execution>
+					<!-- Sprint 3, Parte C:  ./mvnw -q exec:java@historico-lideranca -->
+					<execution>
+						<id>historico-lideranca</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>br.com.pucminas.iceibank.tools.HistoricoLideranca</mainClass>
 						</configuration>
 					</execution>
 					<execution>

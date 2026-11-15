@@ -1,0 +1,48 @@
+=== Parte C - historico de liderancas (HistoricoLideranca sobre agencia\data\*.jsonl) ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:06:21
+PS> cd agencia; .\mvnw -q exec:java@historico-lideranca
+=== Historico de eventos de eleicao ===
+(19:04:34.851) [agencia-1] ELEICAO_INICIADA    [0,1,0]     {"idAgencia":1}
+(19:04:34.923) [agencia-0] ELEICAO_INICIADA    [1,0,0]     {"idAgencia":0}
+(19:04:34.935) [agencia-2] ELEICAO_INICIADA    [0,0,1]     {"idAgencia":2}
+(19:04:35.037) [agencia-2] TORNOU_LIDER        [0,0,2]     {"idAgencia":2}
+(19:04:35.394) [agencia-0] LIDER_ANUNCIADO     [3,0,3]     {"liderId":2,"agencia":0,"aceito":true}
+(19:04:35.401) [agencia-1] ELEICAO_RECEBIDA    [2,3,0]     {"de":0,"minhaId":1}
+(19:04:35.426) [agencia-2] ELEICAO_RECEBIDA    [0,2,5]     {"de":1,"minhaId":2}
+(19:04:35.436) [agencia-1] LIDER_ANUNCIADO     [2,4,4]     {"liderId":2,"agencia":1,"aceito":true}
+(19:04:35.437) [agencia-2] ELEICAO_RECEBIDA    [4,2,6]     {"de":0,"minhaId":2}
+(19:04:35.440) [agencia-2] ELEICAO_INICIADA    [4,2,7]     {"idAgencia":2,"liderConhecida":2}
+(19:04:35.442) [agencia-2] TORNOU_LIDER        [4,2,8]     {"idAgencia":2}
+(19:04:35.447) [agencia-0] LIDER_ANUNCIADO     [6,2,9]     {"liderId":2,"agencia":0,"aceito":true}
+(19:04:35.455) [agencia-1] LIDER_ANUNCIADO     [4,6,10]    {"liderId":2,"agencia":1,"aceito":true}
+(19:04:35.455) [agencia-1] ELEICAO_INICIADA    [4,7,10]    {"idAgencia":1,"liderConhecida":2}
+(19:04:35.457) [agencia-2] ELEICAO_INICIADA    [4,2,11]    {"idAgencia":2,"liderConhecida":2}
+(19:04:35.458) [agencia-2] TORNOU_LIDER        [4,2,12]    {"idAgencia":2}
+(19:04:35.460) [agencia-2] ELEICAO_RECEBIDA    [4,8,14]    {"de":1,"minhaId":2}
+(19:04:35.468) [agencia-0] LIDER_ANUNCIADO     [7,2,13]    {"liderId":2,"agencia":0,"aceito":true}
+(19:04:35.476) [agencia-1] LIDER_ANUNCIADO     [4,10,15]   {"liderId":2,"agencia":1,"aceito":true}
+(19:04:35.479) [agencia-2] ELEICAO_INICIADA    [4,8,16]    {"idAgencia":2,"liderConhecida":2}
+(19:04:35.480) [agencia-2] TORNOU_LIDER        [4,8,17]    {"idAgencia":2}
+(19:04:35.485) [agencia-0] LIDER_ANUNCIADO     [8,8,18]    {"liderId":2,"agencia":0,"aceito":true}
+(19:04:35.491) [agencia-1] LIDER_ANUNCIADO     [4,11,19]   {"liderId":2,"agencia":1,"aceito":true}
+(19:04:46.880) [agencia-1] LIDER_NAO_RESPONDEU [4,12,19]   {"liderAtual":2,"agencia":1,"motivo":"sem resposta em 1000 ms"}
+(19:04:46.882) [agencia-1] ELEICAO_INICIADA    [4,13,19]   {"idAgencia":1}
+(19:04:46.888) [agencia-1] TORNOU_LIDER        [4,15,19]   {"idAgencia":1}
+(19:04:46.897) [agencia-0] LIDER_ANUNCIADO     [9,16,19]   {"liderId":1,"agencia":0,"aceito":true}
+(19:05:01.989) [agencia-2] ELEICAO_INICIADA    [4,8,20]    {"idAgencia":2}
+(19:05:02.017) [agencia-2] TORNOU_LIDER        [4,8,21]    {"idAgencia":2}
+(19:05:02.054) [agencia-0] LIDER_ANUNCIADO     [10,16,22]  {"liderId":2,"agencia":0,"aceito":true}
+(19:05:02.071) [agencia-1] LIDER_ANUNCIADO     [4,18,23]   {"liderId":2,"agencia":1,"aceito":true}
+
+=== Linha do tempo de lideres ===
+A partir de 2026-11-15T19:04:35.037046300Z: Agencia 2 e a lider (lider inicial)
+Em 2026-11-15T19:04:46.880518700Z: agencia 1 detectou que a lider 2 parou de responder (sem resposta em 1000 ms)
+A partir de 2026-11-15T19:04:46.888154300Z: Agencia 1 e a lider (antes: agencia 2)
+A partir de 2026-11-15T19:05:02.017460800Z: Agencia 2 e a lider (antes: agencia 1)
+
+=== Resumo ===
+Eventos de eleicao ................................ 31
+Declaracoes TORNOU_LIDER (inclui reafirmacoes) .... 6
+Trocas efetivas de lideranca (lider diferente) .... 3
+Lider ao final dos logs ........................... agencia 2

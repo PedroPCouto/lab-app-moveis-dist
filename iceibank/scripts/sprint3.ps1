@@ -219,9 +219,15 @@ function ParteFailover {
 function ParteHistorico {
   Diga '=== Parte C - historico de liderancas (HistoricoLideranca sobre agencia\data\*.jsonl) ==='
   MostrarData
-  Comando 'cd agencia; .\mvnw -q exec:java@historico-lideranca    # equivalente: java -cp ...jar (abaixo)'
-  $saida = & (Java) "-Dloader.main=br.com.pucminas.iceibank.tools.HistoricoLideranca" -cp "$JAR" `
-    org.springframework.boot.loader.launch.PropertiesLauncher "$DADOS" 2>&1
+  Comando 'cd agencia; .\mvnw -q exec:java@historico-lideranca'
+  $java = Java
+  if ($java -ne 'java') { $env:JAVA_HOME = Split-Path (Split-Path $java) }
+  Push-Location $DIR_AGENCIA
+  try {
+    $ErrorActionPreference = 'Continue'
+    $saida = & .\mvnw.cmd -q exec:java@historico-lideranca 2>&1 | ForEach-Object { "$_" } |
+      Where-Object { $_ -notmatch '^WARNING' }
+  } finally { Pop-Location }
   foreach ($l in $saida) { Diga "$l" }
 }
 
