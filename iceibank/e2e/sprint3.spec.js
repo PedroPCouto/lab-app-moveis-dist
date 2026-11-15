@@ -1,6 +1,3 @@
-// Testes gravados do Sprint 3: o app Flutter (build web) contra as 3 agencias reais.
-// Cada teste gera uma evidencia em evidencias/sprint3/ (app + terminal PowerShell real) e
-// o video da sessao inteira vai para evidencias/sprint3/videos/.
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
@@ -63,7 +60,6 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     await app.esperarNaTela(page, /Saldo da conta 33: R\$ 70,00/);
     const posTransferencia = await page.screenshot();
 
-    // erro de negocio devolvido pela API, mostrado na tela
     await app.operar(page, 33, 'Sacar', { valor: '1000' });
     await app.esperarNaTela(page, /Erro 400: Saldo insuficiente/);
     const erro = await page.screenshot();
@@ -95,10 +91,9 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     const antes = await page.screenshot();
     const terminalAntes = powershell(['Get-Date', liderEm(0)]);
 
-    await agencias.derrubar(2); // encerra o processo da lider, como fechar o terminal dela
+    await agencias.derrubar(2);
     const terminalQueda = powershell(['Get-Date', `Test-NetConnection localhost -Port 4002 -InformationLevel Quiet -WarningAction SilentlyContinue`]);
 
-    // ninguem toca no app: o polling de 3 s tem que mostrar a nova lider sozinho
     await app.esperarNaTela(page, /Lider atual: Agencia 1/, 30_000);
     const depois = await page.screenshot();
     const terminalDepois = powershell(['Get-Date', liderEm(0), liderEm(1)]);
@@ -120,27 +115,25 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
       ].join('\n'),
     });
 
-    // religa a 2 para os proximos testes: ela retoma a lideranca
     await agencias.subir(2);
     await app.esperarNaTela(page, /Lider atual: Agencia 2/, 30_000);
   });
 
-  // ---- Parte F: offline-first --------------------------------------------------------
-
-  // O token vai por variavel de ambiente para o PowerShell, nunca escrito no comando.
   const saldoNoServidor = `Invoke-RestMethod http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize`;
   let telaOffline;
   let terminalOffline;
 
   test('F1 - em modo aviao, o deposito fica pendente na tela, sem erro', async ({ browser }) => {
-    await app.esperarNaTela(page, /Saldo da conta 30: R\$ 200,50/);
-    await contexto.setOffline(true); // "modo aviao" do navegador: navigator.onLine = false
+    await expect.poll(app.lideres, { timeout: 30_000 }).toEqual([2, 2, 2]);
+    await page.waitForTimeout(1500);
+    await page.reload();
+    await app.esperarNaTela(page, /Saldo da conta 30: R\$ 200,50/, 60_000);
+    await contexto.setOffline(true);
     await app.esperarNaTela(page, /Conexao: offline/);
 
     await app.operar(page, 30, 'Depositar', { valor: '25' });
     await app.esperarNaTela(page, /Saldo provisorio da conta 30: R\$ 225,50/);
     await app.esperarNaTela(page, /Operacoes pendentes de sincronizacao/);
-    // sem rede, o painel da lider tambem mostra que nenhuma agencia respondeu
     await app.esperarNaTela(page, /Nenhuma agencia respondeu/);
     telaOffline = await page.screenshot();
     terminalOffline = powershell(['Get-Date', saldoNoServidor], { TOKEN_ANA: tokenAna });
@@ -154,7 +147,7 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
   });
 
   test('F2 - ao reconectar, o app sincroniza sozinho', async ({ browser }) => {
-    await contexto.setOffline(false); // so reconecta: nenhum toque na tela
+    await contexto.setOffline(false);
     await app.esperarNaTela(page, /Saldo da conta 30: R\$ 225,50/, 30_000);
     await expect.poll(async () => app.textoDaTela(page)).not.toMatch(/Operacoes pendentes de sincronizacao/);
     const depois = await page.screenshot();
@@ -177,7 +170,6 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     await app.esperarNaTela(page, /Saldo provisorio da conta 30: R\$ 215,50/);
     const pendente = await page.screenshot();
 
-    // "por outro caminho": deposito direto na API pelo PowerShell, com o app ainda offline
     const outroCaminho = powershell([
       'Get-Date',
       `Invoke-RestMethod -Method Post http://localhost:4000/contas/30/depositar -ContentType 'application/json' -Body '{"valor":50}' -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize`,
@@ -189,7 +181,6 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     const conflito = await page.screenshot();
     const terminalConflito = powershell(['Get-Date', saldoNoServidor], { TOKEN_ANA: tokenAna });
 
-    // a decisao e da pessoa usuaria: aplicar o saque sobre o saldo real
     await page.getByRole('button', { name: 'Aplicar sobre o saldo atual' }).first().click();
     await app.esperarNaTela(page, /Saldo da conta 30: R\$ 265,50/, 30_000);
     const resolvido = await page.screenshot();
@@ -206,13 +197,11 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     });
   });
 
-  // ---- Funcionalidade adicional: painel do cluster ------------------------------------
-
   test('X1 - painel do cluster: agencias ativas e historico de trocas de lider', async ({ browser }) => {
-    await agencias.derrubar(1); // uma agencia que NAO e a lider cai
+    await agencias.derrubar(1);
     await app.esperarNaTela(page, /Agencia 1: fora do ar/, 20_000);
     await page.mouse.move(200, 600);
-    await page.mouse.wheel(0, 3000); // rola ate o fim da lista, onde fica o painel
+    await page.mouse.wheel(0, 3000);
     await app.esperarNaTela(page, /Troca de lider: agencia 1 para agencia 2/);
     await page.waitForTimeout(800);
     const tela = await page.screenshot();
@@ -232,8 +221,6 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     await agencias.subir(1);
     await app.esperarNaTela(page, /Agencia 1: no ar/, 20_000);
   });
-
-  // ---- Regressao: o frontend web do Sprint 1 continua funcionando ---------------------
 
   test('R1 - regressao: frontend web e JWT continuam funcionando com a API do Sprint 3', async ({ browser }) => {
     const { spawn } = require('child_process');
@@ -258,7 +245,6 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
       const tela = await web.screenshot({ fullPage: true });
       await web.close();
 
-      // JWT: sem token -> 401; token valido -> 200 (agora com vetorAtual)
       const semToken = await app.api('GET', 0, '/contas/30');
       const comToken = await app.api('GET', 0, '/contas/30', null, tokenAna);
       expect(semToken.status).toBe(401);
