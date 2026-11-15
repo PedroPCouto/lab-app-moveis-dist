@@ -91,6 +91,15 @@ Armadilhas conhecidas:
   `main.dart`); campos são achados por `getByRole('textbox', {name})` e é preciso esperar
   ~400 ms depois do clique antes de digitar (ver `e2e/apoio/app.js`).
 
+## Convenções pedidas pelo usuário (15/11/2026)
+
+- **Sem comentários no código.** Todos foram removidos em 15/11/2026 (Sprints 1-3), com
+  validação: 61 testes Java, 10 Dart, 8 Playwright do Sprint 3 e 3 do Sprint 2 passando.
+  As justificativas que estavam nos comentários estão nesta página, no README e no RESPOSTAS.
+- **Commits sem `Co-Authored-By: Claude`.** Os commits locais do Sprint 3 foram reescritos
+  sem a linha antes do push. Os 11 commits do Sprint 2 já publicados ainda têm a linha;
+  reescrevê-los exige `git push --force` na `main` e depende de confirmação do usuário.
+
 ## Decisões de projeto (e por quê)
 
 Backend:
@@ -129,9 +138,13 @@ App:
     devolvido pela 1ª).
 19. **409 → decisão da pessoa** (diálogo automático + cartão persistente; "aplicar sobre o
     saldo atual" ou "descartar"); operações seguintes da mesma conta também param.
-20. **Painel da líder** pergunta a uma agência por vez (a última que respondeu primeiro),
+20. **Painel do cluster** (adicional) mede "no ar" e latência com `GET /bully/lider` (leve);
+    `GET /status` só complementa com vetor e contas, com timeout de 4 s, porque com o
+    RabbitMQ real ele consulta 6 filas no CloudAMQP e passa de 1,5 s (antes isso marcava
+    as 3 agências como fora do ar).
+21. **Painel da líder** pergunta a uma agência por vez (a última que respondeu primeiro),
     a cada 3 s; mostra quem informou.
-21. **Evidências do app** = build web em Chromium (viewport 412×915) + saída real de
+22. **Evidências do app** = build web em Chromium (viewport 412×915) + saída real de
     PowerShell ao lado (`e2e/apoio/evidencia.js`).
 
 ## Observações das execuções reais (base das RESPOSTAS)

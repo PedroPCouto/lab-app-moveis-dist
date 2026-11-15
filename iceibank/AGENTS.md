@@ -16,8 +16,12 @@ Leia, nesta ordem:
 
 Convenções:
 
-- Código, comentários e mensagens em português, sem acentos no código Java (como o existente).
-- Commits pequenos, no formato `tipo(escopo): descricao` dos roteiros.
+- Código e mensagens em português, sem acentos no código Java (como o existente).
+- **Sem comentários no código** (Java, Dart, JS, PowerShell, bash, YAML, XML): pedido do
+  usuário. Explicações e justificativas vão para `README.md`, `RESPOSTAS.md` e
+  `docs/SPRINT3-ESTADO.md`.
+- Commits pequenos, no formato `tipo(escopo): descricao` dos roteiros, **sem linha de
+  coautoria de IA** (`Co-Authored-By`) nem menção a IA na mensagem: pedido do usuário.
 - Evidências em `evidencias/sprintN/`: prints reais com data/hora visível; as saídas em texto
   ficam em `evidencias/sprintN/saidas/`.
 - A `RABBITMQ_URL` (CloudAMQP) está em `.env.local`, que fica **fora do Git** por decisão do
