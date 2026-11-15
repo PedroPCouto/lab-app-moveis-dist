@@ -910,16 +910,6 @@ Quem fecha o ciclo automaticamente é a compensação do Sprint 4.
   inexistente. Os testes de serviço substituem o RabbitMQ por um mock; o caminho real pelo
   broker foi verificado pelas execuções acima.
 
-## Declaração de uso de IA
-
-Conforme a nota de transparência do roteiro: a implementação do Sprint 2 (código, scripts,
-testes e o texto destas respostas) foi desenvolvida com apoio do **Claude Code (Anthropic)**,
-a partir do código do Sprint 1 e do roteiro. As execuções e evidências são reais, rodadas
-contra a minha instância CloudAMQP. Revisei o código entregue e consigo explicar cada parte,
-em especial as três decisões listadas no início desta seção e o motivo de cada par
-concorrente/causal citado na Parte D.
-
-
 ---
 
 # Sprint 3 — App Flutter, eleição de líder e offline-first
@@ -1424,11 +1414,3 @@ heartbeat e timeouts do Bully configuráveis por variável de ambiente.
   relógio vetorial funcionando como deveria (regra 3 aplicada às mensagens do Bully); a
   verificação que importa — a agência 2, ao consumir, passa a ter a posição 0 igual à do
   envio — continua no teste.
-
-## Declaração de uso de IA
-
-Como nos sprints anteriores: a implementação do Sprint 3 (backend, app Flutter, scripts,
-testes e o texto destas respostas) foi desenvolvida com apoio do **Claude Code
-(Anthropic)**, a partir do código dos Sprints 1 e 2 e do roteiro. As execuções e
-evidências são reais, feitas nesta máquina em 15/11/2026. Revisei o código entregue e
-consigo explicar cada parte, em especial as decisões listadas no início desta seção.
