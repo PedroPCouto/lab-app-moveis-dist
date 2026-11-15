@@ -96,9 +96,10 @@ Armadilhas conhecidas:
 - **Sem comentários no código.** Todos foram removidos em 15/11/2026 (Sprints 1-3), com
   validação: 61 testes Java, 10 Dart, 8 Playwright do Sprint 3 e 3 do Sprint 2 passando.
   As justificativas que estavam nos comentários estão nesta página, no README e no RESPOSTAS.
-- **Commits sem `Co-Authored-By: Claude`.** Os commits locais do Sprint 3 foram reescritos
-  sem a linha antes do push. Os 11 commits do Sprint 2 já publicados ainda têm a linha;
-  reescrevê-los exige `git push --force` na `main` e depende de confirmação do usuário.
+- **Commits sem `Co-Authored-By: Claude` nem `Claude-Session:`.** Em 15/11/2026, com
+  autorização do usuário, todo o histórico desde o Sprint 2 teve as mensagens reescritas
+  (conteúdo idêntico) e a `main` foi publicada com `git push --force-with-lease`. Quem tiver
+  um clone antigo precisa de `git fetch && git reset --hard origin/main`.
 
 ## Decisões de projeto (e por quê)
 
