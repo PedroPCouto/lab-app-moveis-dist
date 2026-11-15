@@ -53,3 +53,8 @@ __pycache__/
 # execucao; os videos que valem como evidencia sao copiados para evidencias/sprint2/videos.
 e2e/resultados/
 e2e/relatorio/
+
+# Sprint 3: resultados da suite do app (o video que vale como evidencia e copiado para
+# evidencias/sprint3/videos) e o build do Flutter
+e2e/resultados-sprint3/
+app_mobile/build/

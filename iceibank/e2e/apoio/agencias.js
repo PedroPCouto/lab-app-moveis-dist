@@ -37,9 +37,15 @@ async function esperar(condicao, descricao, limiteMs = 90_000) {
   throw new Error(`Tempo esgotado esperando: ${descricao}`);
 }
 
-function verificarPreRequisitos() {
+// exigirBroker=false (Sprint 3): sem RABBITMQ_URL as agencias sobem apontando para
+// amqp://localhost sem broker - Bully, contas e sincronizacao funcionam; so a transferencia
+// entre agencias responde 503.
+function verificarPreRequisitos({ exigirBroker = true } = {}) {
   if (!process.env.RABBITMQ_URL) {
-    throw new Error('RABBITMQ_URL nao definida. Rode pelo e2e/rodar.ps1, que le a variavel de usuario.');
+    if (exigirBroker) {
+      throw new Error('RABBITMQ_URL nao definida. Rode pelo e2e/rodar.ps1, que le a variavel de usuario.');
+    }
+    process.env.RABBITMQ_URL = 'amqp://localhost:5672';
   }
   if (!fs.existsSync(JAR)) {
     throw new Error(`Jar nao encontrado em ${JAR}. Rode "./mvnw package -DskipTests" em agencia/.`);
