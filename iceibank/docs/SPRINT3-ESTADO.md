@@ -1,101 +1,150 @@
 # Sprint 3 — estado atual, decisões e como continuar
 
 > Documento de passagem de bastão. Qualquer pessoa (ou modelo de IA) que pegar o projeto
-> no meio do Sprint 3 deve começar por aqui. Atualize-o a cada etapa concluída.
+> deve começar por aqui. Atualize-o a cada etapa concluída.
+> **Última atualização: 15/11/2026 — Sprint 3 implementado e evidenciado.**
 
 Roteiro original do Sprint 3: [`docs/roteiro-sprint3/`](roteiro-sprint3/) (cópia fiel dos
-arquivos entregues pelo professor). Checklist e critérios de avaliação estão em
-`sprint3-iceibank-adaptacao-checklist-avaliacao.md`.
+arquivos do professor). Checklist e critérios de avaliação em
+`sprint3-iceibank-adaptacao-checklist-avaliacao.md`. Respostas às perguntas:
+[`RESPOSTAS.md`](../RESPOSTAS.md), seção "Sprint 3".
 
-## Progresso (checklist da seção 12)
+## Checklist da seção 12
 
 | Item | Situação | Onde |
 |---|---|---|
-| Parte A — eleição/coordenador (Bully) | feito | `agencia/.../service/BullyService.java`, `BullyController.java`, evidência `evidencias/sprint3/eleicao-inicial.png` |
-| 3 agências convergem para a mesma líder | feito (verificado em execução real) | idem |
-| Parte B — heartbeat + reeleição automática | feito | `BullyService.verificarLider/iniciarHeartbeat`, `failover.png` |
-| Parte C — histórico de lideranças | feito (em Java: `tools/HistoricoLideranca.java`) | `historico-lideranca.png` |
-| Parte E — `/contas/{id}/sincronizar` + 409 | em andamento | — |
-| Parte D — app Flutter (fluxo bancário + painel da líder) | pendente | `app_mobile/` |
-| Parte F — offline-first no app | pendente | `app_mobile/` |
-| Funcionalidade adicional | pendente (escolha: indicador de agências ativas no app) | — |
-| RESPOSTAS.md (5.5, 6.4, 7.3, 8.3, 9.6, 10.3) | pendente | `RESPOSTAS.md` |
-| README atualizado | pendente | `README.md` |
+| Parte A — eleição/coordenador (Bully) | feito | `agencia/.../service/BullyService.java`, `controller/BullyController.java`; `eleicao-inicial.png`, `eleicao-escalonada.png` |
+| As 3 convergem para a mesma líder, mesmo com a tempestade | feito (verificado em execução real e em `BullyServiceTest`) | idem |
+| Parte B — heartbeat + reeleição automática | feito | `BullyService.verificarLider/iniciarHeartbeat`; `failover.png` |
+| Parte C — histórico de lideranças | feito, em Java (`tools/HistoricoLideranca.java`, `exec:java@historico-lideranca`) | `historico-lideranca.png`, `historico-escalonada.png` |
+| App Flutter — fluxo bancário completo | feito | `app_mobile/lib/src/banco.dart`, `telas/`; `app-fluxo-bancario.png` |
+| App Flutter — painel da líder + failover na UI | feito | `lideranca.dart`, `telas/painel_lider.dart`; `app-lider-atual.png`, `app-failover.png` |
+| Parte E — `/contas/{id}/sincronizar` + 409 | feito (inclui TRANSFERENCIA e idempotência) | `SincronizacaoService`, `ContaService.aplicarSincronizado`; `conflito-sincronizacao.png` |
+| Parte F — offline-first no app | feito | `banco.dart` (fila/sincronizar), `conectividade.dart`, `armazenamento.dart`; `app-offline.png`, `app-sincronizacao.png` |
+| 409 visível no app | feito (diálogo + cartão, decisão da pessoa) | `telas/pendentes.dart`; `app-conflito.png` |
+| Sem regressão (JWT, frontend web, mensageria/vetorial) | feito, **exceto** mensageria real (sem RabbitMQ nesta máquina) | `regressao-frontend-jwt.png`; testes Java |
+| Funcionalidade adicional | feito: painel do cluster no app (agências ativas + histórico de trocas de líder) | `agencias.dart`, `telas/painel_cluster.dart`; `funcionalidade-adicional.png` |
+| `evidencias/sprint3/` com os 8 prints | feito (+6 extras e vídeo `videos/sprint3-app.webm`) | |
+| RESPOSTAS.md (5.5, 6.4, 7.3, 8.3, 9.6, 10.3 + adicional) | feito | `RESPOSTAS.md` |
+| README atualizado | feito | `README.md`, `app_mobile/README.md` |
 
-## Ambiente desta máquina (Windows 11, disco C: quase cheio — ~5 GB livres)
+Testes: **61 Java** (`cd agencia && ./mvnw test`), **10 Dart** (`cd app_mobile && flutter
+test`), **8 Playwright** (`e2e\rodar-sprint3.ps1`). Todos passando em 15/11/2026.
+
+## Pendências que dependem do usuário
+
+1. **Regressão da mensageria com RabbitMQ real.** A `RABBITMQ_URL` (CloudAMQP) não está
+   definida nesta máquina. Definir com
+   `[Environment]::SetEnvironmentVariable('RABBITMQ_URL','amqps://...','User')` e rodar
+   `e2e\rodar.ps1` (suíte do Sprint 2) — deve passar sem mudanças. **Nunca** gravar a URL em
+   arquivo.
+2. **Rodar o app num Android de verdade (opcional).** Não há emulador nem espaço em disco
+   (~5 GB livres). O projeto `android/` está pronto (INTERNET, ACCESS_NETWORK_STATE,
+   `usesCleartextTraffic`). Precisaria habilitar Android no Flutter
+   (`flutter config --enable-android`), Android SDK com plataforma recente e um
+   emulador/dispositivo. O host padrão no Android é `10.0.2.2`.
+3. **Push** para o GitHub (`origin`): os commits estão só locais; não foi feito push.
+
+## Ambiente desta máquina (Windows 11, disco C: quase cheio)
 
 - **JDK 25** portátil em `%LOCALAPPDATA%\AndroidDev\jdk-25.0.5+8` (o `pom.xml` exige Java 25).
-  Use `JAVA_HOME` apontando para lá. Há também um JDK 21 em `AndroidDev\jdk-21` (não serve).
+  Os scripts o encontram sozinhos; para Maven à mão, exporte `JAVA_HOME`.
 - **Flutter 3.50.0 / Dart 3.14** em `%LOCALAPPDATA%\AndroidDev\flutter` (clone raso da tag
-  3.50.0, só artefatos **web** baixados: `flutter precache --web`). Android/iOS/desktop
-  desabilitados no `flutter config` para economizar disco.
-- **Sem emulador Android** (não há imagem de sistema nem espaço em disco para uma). O
-  Android SDK em `%LOCALAPPDATA%\Android\Sdk` tem só platform-tools/build-tools.
-  Decisão: o app é desenvolvido e evidenciado como **Flutter web** rodando no Chromium do
-  Playwright, com viewport de celular; o mesmo código roda em Android (ver README do app).
-- **Sem RabbitMQ**: a `RABBITMQ_URL` (CloudAMQP) não está definida nesta máquina. O
-  `scripts/sprint3.ps1` sobe as agências com `amqp://localhost` (sem broker): Bully, contas
-  e sincronização funcionam; só a transferência **entre** agências responde 503 (estorno).
-  Para a regressão do Sprint 2 (mensageria) é preciso a URL do usuário:
-  `[Environment]::SetEnvironmentVariable('RABBITMQ_URL','amqps://...','User')`.
-  **Nunca** grave essa URL em arquivo.
-- Node 24 disponível (Playwright já instalado em `e2e/`).
+  3.50.0, só artefatos **web**). Android/iOS/desktop desabilitados no `flutter config`.
+  Não está no PATH: use `"$env:LOCALAPPDATA\AndroidDev\flutter\bin\flutter"`.
+- No Flutter 3.50 o Material saiu do SDK: o app importa `package:material_ui/material_ui.dart`.
+- **Sem RabbitMQ:** os scripts sobem as agências com `amqp://localhost` (sem broker) quando
+  não há `RABBITMQ_URL` — Bully, contas e sincronização funcionam; transferência entre
+  agências responde 503 com estorno; o console da agência mostra erros de conexão AMQP (normal).
+- Node 24; Playwright já instalado em `e2e/node_modules`.
 
 ## Como rodar (resumo)
 
 ```powershell
 $env:JAVA_HOME = "$env:LOCALAPPDATA\AndroidDev\jdk-25.0.5+8"
 cd agencia; .\mvnw.cmd test; .\mvnw.cmd package -DskipTests; cd ..
-powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 eleicao     # sobe as 3 e consulta /bully/lider
-powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 failover    # derruba a líder, espera, religa
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 eleicao     # Parte A
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 failover    # Parte B
 powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 historico   # Parte C
-powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 parar       # derruba todas
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 conflito    # Parte E
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 parar
+cd app_mobile; flutter build web --release --no-web-resources-cdn; cd ..
+powershell -ExecutionPolicy Bypass -File e2e\rodar-sprint3.ps1           # Partes D, F, adicional, regressão
 ```
 
-`-Saida evidencias\sprint3\saidas\X.txt` grava a saída e gera `evidencias\sprint3\X.png`.
+`-Saida evidencias\sprint3\saidas\X.txt` (no `sprint3.ps1`) grava a saída e gera
+`evidencias\sprint3\X.png`. A suíte Playwright regrava os prints do app a cada execução.
 
-Armadilha conhecida: o `mvnw package` falha se houver agência rodando (o jar fica travado).
-Derrube-as antes (`sprint3.ps1 parar`).
+Armadilhas conhecidas:
+- `mvnw package` falha se houver agência rodando (o jar fica travado): `sprint3.ps1 parar` antes.
+- A suíte e2e exige as portas 4000-4002 livres (derrube agências antes) e **apaga os logs**
+  de `agencia/data` (move para `anteriores-<data>`).
+- As agências são iniciadas por `cmd /c` via `Start-Process` sem redirecionamento
+  (ShellExecute), para o java não herdar os handles do PowerShell chamador — senão quem chama
+  o script trava até as agências caírem.
+- Flutter web + Playwright: o app liga a árvore de semântica (`ensureSemantics` em
+  `main.dart`); campos são achados por `getByRole('textbox', {name})` e é preciso esperar
+  ~400 ms depois do clique antes de digitar (ver `e2e/apoio/app.js`).
 
-## Decisões de projeto do Sprint 3 (e por quê)
+## Decisões de projeto (e por quê)
 
-1. **Backend continua em Java/Spring** (regra 2.2 do escopo). O código Node do roteiro foi
-   traduzido; a lógica de decisão do Bully é a mesma, rotas e formato de mensagem idênticos
-   (`POST /bully/eleicao {origemId, vetorEnvio}`, `POST /bully/coordenador {liderId,
-   vetorEnvio}`, `GET /bully/lider`).
-2. **HTTP entre agências com `java.net.http.HttpClient`** + timeout (connect e request),
-   atrás da interface `ClienteBully` para testar a lógica sem rede (`BullyServiceTest`).
-3. **Concorrência:** `liderAtual` é `AtomicInteger` (-1 = sem líder); "eleição em
-   andamento" é `AtomicBoolean` com `compareAndSet`.
-4. **O "OK" do Bully volta imediatamente:** `receberEleicao` responde 200 e conduz a
-   própria eleição numa thread separada. Senão quem perguntou estoura o timeout de 1 s e
-   se declara líder por engano.
-5. **Anúncio de id menor é recusado** (`receberCoordenador` com `liderId < meuId` inicia
-   eleição). Sem isso, a tempestade da subida podia convergir para a agência errada.
-6. **Heartbeat** com `scheduleWithFixedDelay` (não sobrepõe verificações) e checagem
-   extra: se a líder responde mas diz que não é mais líder, também reelege.
-7. **Toda mensagem do Bully passa pelo relógio vetorial e é logada** (inclusive os envios:
-   `ELEICAO_ENVIADA`, `COORDENADOR_ENVIADO`, além de `AGUARDANDO_COORDENADOR`). Motivo: o
-   relógio é restaurado do último evento logado ao reiniciar; envio não logado faria a
-   agência reutilizar vetores já vistos pelas outras.
-8. **Rotas do Bully públicas** (sem JWT), como no roteiro — discutido na pergunta 3 da Parte A.
-9. **Parâmetros configuráveis** (`iceibank.bully.*` / env `BULLY_HEARTBEAT_MS`,
-   `BULLY_TIMEOUT_MS`, `BULLY_HABILITADO`, `AGENCIAS_HOST`). Nos testes Spring o Bully fica
-   desligado (`iceibank.bully.habilitado=false`).
-10. **Script de histórico em Java** (`HistoricoLideranca`, `exec:java@historico-lideranca`),
-    seguindo o precedente do `MesclarLogs` do Sprint 2.
-11. **Scripts de demonstração em PowerShell** (`scripts/sprint3.ps1`), porque os `.sh` do
-    Sprint 2 dependem de jq/curl/Python que esta máquina não tem. As agências são iniciadas
-    via `cmd /c` com `Start-Process` sem redirecionamento (ShellExecute), para o java não
-    herdar os handles do PowerShell chamador (senão o chamador trava até as agências caírem).
+Backend:
+1. **Java/Spring** (regra 2.2), código Node do roteiro traduzido; rotas e mensagens iguais.
+2. **`java.net.http.HttpClient`** com timeout de conexão e de resposta, atrás da interface
+   `ClienteBully` (testes com rede em memória em `BullyServiceTest`).
+3. **Concorrência:** `liderAtual` `AtomicInteger` (-1 = nenhuma), eleição em andamento
+   `AtomicBoolean` + `compareAndSet`.
+4. **O "OK" do Bully volta na hora:** `receberEleicao` responde e conduz a eleição em outra
+   thread (senão quem perguntou estoura o timeout e se declara líder).
+5. **Anúncio de id menor é recusado** (inicia eleição).
+6. **Heartbeat** com `scheduleWithFixedDelay`; reelege também se a líder responde mas não se
+   reconhece líder.
+7. **Toda mensagem do Bully é logada com vetor**, inclusive envios (`ELEICAO_ENVIADA`,
+   `COORDENADOR_ENVIADO`, `AGUARDANDO_COORDENADOR`), por causa da restauração do relógio.
+8. **Rotas do Bully públicas**, como no roteiro (discussão na pergunta A3).
+9. **Parâmetros configuráveis** (`iceibank.bully.*`; env `BULLY_HEARTBEAT_MS`,
+   `BULLY_TIMEOUT_MS`, `BULLY_HABILITADO`, `AGENCIAS_HOST`); desligado nos testes Spring.
+10. **Histórico em Java** (`HistoricoLideranca`), como o `MesclarLogs` do Sprint 2; separa
+    declarações `TORNOU_LIDER` de trocas efetivas.
+11. **Sincronização:** comparação + incremento atômicos (`RelogioVetorial.eventoLocalSeIgual`);
+    conflito verificado antes de saldo; snapshot (saldo, vetor) sob a trava da conta
+    (`ContaService.comVetor`); `aoReceber` do crédito remoto movido para dentro da trava.
+12. **Idempotência por `idOperacao`** (mapa em memória por `dono:id`).
+13. **409** = `{erro, relacao, vetorConhecido, vetorAtual, contaAtual}` (handler próprio em
+    `TratadorDeErros`). Respostas de conta passaram a ser `ContaComVetor` (campos antigos
+    mantidos; o frontend web não mudou).
 
-## Observações das execuções reais (para as RESPOSTAS)
+App:
+14. **Hive (`hive_ce`)** com registros JSON (`Box<String>`): roda igual no Android e na web.
+15. **Dinheiro em centavos (`int`)**.
+16. **Estado com `ChangeNotifier` + `ListenableBuilder`** (sem pacote de estado).
+17. **Offline = sem rede (`connectivity_plus`) OU `ErroDeRede` na chamada.** Se a conta já
+    tem fila, a nova operação também entra na fila (ordem). Sync ao reconectar e a cada 4 s.
+18. **Encadeamento de vetores** entre operações offline da mesma conta (a 2ª usa o vetor
+    devolvido pela 1ª).
+19. **409 → decisão da pessoa** (diálogo automático + cartão persistente; "aplicar sobre o
+    saldo atual" ou "descartar"); operações seguintes da mesma conta também param.
+20. **Painel da líder** pergunta a uma agência por vez (a última que respondeu primeiro),
+    a cada 3 s; mostra quem informou.
+21. **Evidências do app** = build web em Chromium (viewport 412×915) + saída real de
+    PowerShell ao lado (`e2e/apoio/evidencia.js`).
 
-- Subida simultânea (15/11/2026 15:48 e 16:04): só a agência 2 declarou `TORNOU_LIDER`,
-  **4 vezes** em ~0,5 s (uma reeleição por eleição recebida de 0 e de 1). 0 e 1 receberam
-  4 `LIDER_ANUNCIADO` cada. Convergência para 2 em < 1 s.
-- Failover (16:04:48): `Stop-Process` na 2; a agência 1 detectou às 16:04:46.88 (log em
-  UTC 19:04:46.880, "sem resposta em 1000 ms"), virou líder em 8 ms; a 0 aceitou. Religada,
-  a 2 retomou a liderança (`TORNOU_LIDER` 19:05:02). Histórico: 6 declarações, 3 trocas
-  efetivas.
-- O vetor da agência 2 sobreviveu ao reinício (voltou em `[4,8,20]`, continuando o log).
+## Observações das execuções reais (base das RESPOSTAS)
+
+- Subida simultânea (15:48): só a 2 declarou `TORNOU_LIDER`, 4 vezes em ~0,5 s; 7 eleições
+  iniciadas e 12 mensagens HTTP entre agências.
+- Subida escalonada (16:40): 0 (16:40:23) → 1 (16:40:33) → 2 (16:40:42), 3 trocas efetivas.
+- Failover backend (16:04): a 1 detectou às 16:04:46.880, virou líder em 8 ms; a 2 voltou e
+  retomou às 16:05:02. A 2 voltou com o vetor restaurado do log (`[4,8,20]`).
+- Conflito backend (16:12:43): `[40,49,79]` → depósito → `[41,49,79]` → 409 `ANTES` → reenvio → 200.
+- Execução final da suíte do app: 16:39 (todos os prints `app-*`, `funcionalidade-adicional`,
+  `regressao-frontend-jwt`).
+
+## Ideias para o Sprint 4 (containers + 2PC/Saga)
+
+- A líder do Bully vira coordenadora do 2PC; aí as rotas `/bully/*` precisam de autenticação
+  entre agências (token de serviço ou mTLS) e o "retomar liderança" (pergunta B2) precisa de
+  épocas/termos para não haver duas coordenadoras.
+- `AGENCIAS_HOST` já permite apontar para nomes de serviço do Docker Compose (mas a porta
+  ainda é `4000 + OFFSET + id`; em containers talvez seja melhor uma lista de URLs).
+- Conflito por conta em vez de por agência (versão por conta) — pergunta E2.

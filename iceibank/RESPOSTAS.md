@@ -1,9 +1,10 @@
-# ICEIBank — RESPOSTAS (Sprints 1 e 2)
+# ICEIBank — RESPOSTAS (Sprints 1, 2 e 3)
 
 Linguagem escolhida para os 4 sprints: **Java (Spring Boot)**.
 
 - **Sprint 1** (U2 — REST/MVC + relógio de Lamport + JWT): seções logo abaixo.
-- **Sprint 2** (U3 — mensageria RabbitMQ + relógio vetorial): [ao final do arquivo](#sprint-2--mensageria-pubsub-e-relógio-vetorial).
+- **Sprint 2** (U3 — mensageria RabbitMQ + relógio vetorial): [mais abaixo](#sprint-2--mensageria-pubsub-e-relógio-vetorial).
+- **Sprint 3** (U4 — app Flutter + eleição de líder (Bully) + offline-first): [ao final do arquivo](#sprint-3--app-flutter-eleição-de-líder-e-offline-first).
 
 ---
 
@@ -917,3 +918,509 @@ a partir do código do Sprint 1 e do roteiro. As execuções e evidências são 
 contra a minha instância CloudAMQP. Revisei o código entregue e consigo explicar cada parte,
 em especial as três decisões listadas no início desta seção e o motivo de cada par
 concorrente/causal citado na Parte D.
+
+
+---
+
+# Sprint 3 — App Flutter, eleição de líder e offline-first
+
+Projeto: ICEIBank, Sprint 3 (U4 — Desenvolvimento Móvel: app Flutter + consenso por
+eleição de líder com o algoritmo de Bully + sincronização offline-first com o relógio
+vetorial do Sprint 2). O backend continua em Java/Spring Boot (regra 2.2 do escopo); o
+código Node do roteiro foi traduzido, mantendo rotas e formato de mensagem.
+
+Todas as saídas citadas vêm das execuções reais de **15/11/2026** registradas em
+`evidencias/sprint3/` (prints) e `evidencias/sprint3/saidas/` (texto). As horas de parede
+dos logs (`horaParede`) estão em UTC; o `Get-Date` dos prints está no horário de Brasília
+(UTC−3). As agências rodaram sem RabbitMQ nesta máquina (sem a `RABBITMQ_URL`): nada do
+Sprint 3 depende do broker, e a única consequência visível é a transferência **entre**
+agências responder 503 com estorno (ver "Continuidade", no fim).
+
+## Como a arquitetura ficou
+
+| Peça | Onde | O que faz |
+|---|---|---|
+| `BullyService` | `agencia/.../service/BullyService.java` | eleição, anúncio de coordenador, heartbeat |
+| `ClienteBully` / `ClienteBullyHttp` | `service/` | chamadas entre agências com `java.net.http.HttpClient` e timeout |
+| Rotas `/bully/eleicao`, `/bully/coordenador`, `/bully/lider` | `controller/BullyController.java` | públicas (sem JWT), como no roteiro |
+| `HistoricoLideranca` | `tools/HistoricoLideranca.java` | versão Java do `historico-lideranca.js` (`./mvnw -q exec:java@historico-lideranca`) |
+| `POST /contas/{id}/sincronizar` | `SincronizacaoService`, `ContaService.aplicarSincronizado` | aplica operação offline só se `vetorConhecido == vetor atual`; senão 409 |
+| `ContaComVetor` | `dto/` | toda leitura/escrita de conta devolve `vetorAtual` junto com o saldo |
+| App Flutter | `app_mobile/lib/src/` | fluxo bancário, painel da líder, offline-first, painel do cluster |
+| Testes | `BullyServiceTest`, `SincronizacaoServiceTest` (Java, 61 no total); `banco_offline_test.dart` (10); `e2e/sprint3.spec.js` (8, Playwright) | |
+
+Decisões que vão além do exemplo em Node (e por quê):
+
+1. **O "OK" do Bully volta na hora.** Ao receber `/bully/eleicao`, a agência responde 200
+   e só depois conduz a própria eleição, numa thread separada. Se ela conduzisse a eleição
+   antes de responder (até 1 s por agência maior), quem perguntou estouraria o timeout de
+   1 s e se declararia líder por engano.
+2. **Concorrência explícita.** `liderAtual` é um `AtomicInteger` e "eleição em andamento"
+   um `AtomicBoolean` com `compareAndSet` — o heartbeat roda numa thread agendada enquanto
+   as mensagens chegam nas threads do Tomcat (seção 11 do roteiro).
+3. **Anúncio de quem tem id menor é recusado.** Se a agência 1 se anuncia líder para a 2
+   (que estava subindo e não respondeu a tempo), a 2 não aceita: faz a própria eleição e
+   vence. Sem isso a tempestade da subida pode convergir para a agência errada (teste
+   `anuncioDeQuemTemIdMenorEhRecusadoEProvocaNovaEleicao`).
+4. **Heartbeat confere também o conteúdo da resposta**: se a líder responde mas diz que
+   não é mais líder (reiniciou e está no meio da própria eleição), reelege. E usa
+   `scheduleWithFixedDelay`, para uma verificação lenta nunca se sobrepor à seguinte.
+5. **Toda mensagem do Bully passa pelo relógio vetorial e é logada, inclusive os envios**
+   (`ELEICAO_ENVIADA`, `COORDENADOR_ENVIADO`). O relógio é restaurado do último evento
+   logado quando a agência reinicia (Sprint 2); envio não logado faria a agência reutilizar
+   vetores que as outras já viram. Observado: a agência 2 derrubada às 16:04 voltou com o
+   vetor `[4,8,20]`, continuando o log.
+6. **Sincronização com compare-and-increment.** A comparação "vetor conhecido == vetor
+   atual" e o incremento do evento acontecem sob a mesma trava do relógio
+   (`RelogioVetorial.eventoLocalSeIgual`), então nenhum outro evento entra entre a
+   verificação e a aplicação. Saldo e vetor de uma conta são lidos juntos, com a conta
+   travada, para o par que o app guarda ser consistente.
+7. **Idempotência por `idOperacao`.** Se a resposta de uma sincronização se perde, o app
+   reenvia; sem o id, o reenvio daria 409 (o vetor já andou pela própria operação) e a
+   pessoa veria "conflito" numa operação que já foi aplicada.
+8. **Transferência também sincroniza** (o roteiro deixava como extensão): mesma comparação
+   de vetor sobre a conta de origem; o resto é a transferência normal.
+
+---
+
+## Parte A — Mensagens de eleição e coordenador (seção 5.5)
+
+Evidências: `eleicao-inicial.png` (as 3 sobem juntas), `eleicao-escalonada.png` (sobem
+com 4 s de intervalo, como abrir 3 terminais um depois do outro).
+
+### 1. Por que o Bully elege o maior ID, e não o menor? O resultado seria diferente (mas correto) com a regra invertida?
+
+O "maior" não tem nada de especial: o que o algoritmo precisa é de uma **ordem total**
+entre os processos que todos conheçam de antemão, para que todos cheguem à mesma conclusão
+sem votar. "Maior ID vence" é a convenção do artigo de Garcia-Molina — o nome *bully*
+("valentão") vem daí: o maior sempre se impõe sobre os menores.
+
+Com a regra invertida (menor ID vence, eleição enviada aos de ID **menor**), o algoritmo
+continuaria correto: todos convergiriam para a menor agência ativa. O resultado seria
+diferente — no nosso cluster a líder seria a agência 0 em vez da 2 — mas igualmente único e
+determinístico. O que não pode é misturar as duas regras: se uma agência pensasse "maior
+vence" e outra "menor vence", cada uma aceitaria um coordenador diferente.
+
+Na prática, o critério pode carregar significado: o ID pode codificar "a máquina mais
+forte" ou "a mais nova" e aí a escolha da ordem passa a importar. Aqui os IDs são só
+posições, então tanto faz.
+
+### 2. Mais de uma agência declarou `TORNOU_LIDER` na subida. Bug ou comportamento esperado?
+
+Esperado — e as duas execuções mostram dois jeitos diferentes de isso acontecer:
+
+- **Subida escalonada** (`eleicao-escalonada.png`, 16:40): a agência 0 subiu sozinha,
+  mandou eleição para 1 e 2 (ninguém respondeu) e às 16:40:23 declarou `TORNOU_LIDER` com o
+  vetor `[4,0,0]`. A 1 subiu 4 s depois, perguntou só à 2 (fora do ar), declarou
+  `TORNOU_LIDER` às 16:40:33 (`[0,3,0]`) e anunciou para a 0, que aceitou. A 2 subiu por
+  último e declarou às 16:40:42 (`[0,0,2]`). **Três agências diferentes se declararam
+  líder**, e cada declaração estava certa no momento em que foi feita: era a maior agência
+  *ativa que ela conseguia ver*.
+- **Subida simultânea** (`eleicao-inicial.png`, 15:48): como as três subiram juntas, a 2
+  já respondia quando 0 e 1 perguntaram — só ela se declarou líder, mas **4 vezes** entre
+  15:48:09.102 e 15:48:09.572. Cada `ELEICAO_RECEBIDA` (de 0 e de 1, inclusive as
+  disparadas pelos próprios anúncios) fez a 2 rodar uma nova eleição, ganhar de novo e
+  anunciar de novo; 0 e 1 registraram 4 `LIDER_ANUNCIADO` cada, todos com `liderId=2`.
+
+Não é bug porque o Bully não promete "uma única declaração"; promete que, quando as
+mensagens param de chegar, **todas concordam no maior ID ativo**. Nas duas execuções as 3
+responderam `liderAtual: 2` em menos de 1 s depois da última subida. Seria bug se ficassem
+duas líderes ao mesmo tempo de forma estável — e é exatamente o caso que a decisão 3 acima
+previne.
+
+### 3. `/bully/eleicao` não tem autenticação. É um problema de segurança real para este projeto?
+
+Neste sprint o impacto é pequeno, mas o problema é real e cresce no Sprint 4:
+
+- **Hoje:** a líder é só informativa (escopo, "o que este sprint não resolve"). Um processo
+  que descubra a URL pode disparar eleições em loop (`POST /bully/eleicao` não custa nada
+  para quem envia, e cada uma gera mensagens para as outras agências — um vetor de negação
+  de serviço barato) ou, pior, mandar `POST /bully/coordenador {"liderId": 2}` dizendo que
+  uma agência morta é a líder. A agência aceitaria (só recusa anúncio de ID **menor** que o
+  dela) até o heartbeat seguinte perceber que a "líder" não responde. Nenhum saldo muda.
+- **No Sprint 4** a líder vai coordenar transações distribuídas (2PC). Aí um coordenador
+  falso poderia segurar transações ou receber votos de commit — o impacto passa a ser sobre
+  dinheiro.
+
+O JWT de cliente não resolve, porque quem chama é outra agência, não uma pessoa. O caminho
+seria autenticar **agências**: um token de serviço assinado com uma chave só das agências
+(o tipo `SISTEMA` que existia no Sprint 1), mTLS entre elas, ou simplesmente não expor as
+portas do Bully fora da rede interna — que é o que os containers do Sprint 4 permitem
+fazer.
+
+---
+
+## Parte B — Heartbeat e failover automático (seção 6.4)
+
+Evidência: `failover.png` (16:04). A líder 2 foi encerrada com `Stop-Process`; às
+16:04:46.880 a agência 1 registrou `LIDER_NAO_RESPONDEU {liderAtual=2}`, 8 ms depois
+`TORNOU_LIDER`, e às 16:04:46.897 a 0 aceitou o anúncio. Ninguém tocou em nada. Religada
+(passo 6), a 2 voltou, fez a própria eleição e retomou a liderança às 16:05:02.
+
+### 1. Heartbeat de 100 ms? E de 60 s?
+
+- **100 ms:** detecção quase instantânea, mas cada seguidora faria 10 `GET /bully/lider`
+  por segundo à líder — com N agências, ~10·(N−1) requisições/s só de "você está viva?".
+  Pior que o tráfego é a **sensibilidade**: o intervalo fica menor que variações normais
+  da rede ou uma pausa do coletor de lixo da JVM. Uma resposta atrasada vira "líder caiu",
+  e o sistema faz eleições desnecessárias (*flapping*), cada uma com sua rajada de mensagens
+  e trocas de liderança.
+- **60 s:** quase nenhum tráfego, mas o cluster pode passar até um minuto achando que tem
+  líder quando não tem. Neste sprint isso só deixaria o painel errado; no Sprint 4, seriam
+  60 s de transações sem coordenador.
+
+O valor certo depende de quanto custa ficar sem líder versus quanto custa uma eleição à
+toa. 3 s (o padrão do roteiro) é um meio-termo razoável para uma rede local. Por isso
+deixei configurável (`BULLY_HEARTBEAT_MS`, `BULLY_TIMEOUT_MS`), sem recompilar.
+
+### 2. A agência que volta "toma" a liderança de volta. Isso é desejável?
+
+No Bully clássico, sim por definição — a regra é "o maior ID ativo". No nosso teste: a 1
+liderava desde 16:04:46 sem problema nenhum, e às 16:05:02 a 2 voltou e tomou a liderança.
+Foi uma troca que **ninguém precisava**: o sistema estava saudável.
+
+Num sistema real isso é um problema prático: se a líder coordena uma transação (o 2PC do
+Sprint 4) e no meio dela uma agência de ID maior volta e se anuncia, a transação fica com
+dois "coordenadores" possíveis — a antiga, que já mandou o *prepare*, e a nova, que não
+sabe de nada. Participantes podem ficar bloqueados esperando um *commit/abort* que a nova
+líder não vai mandar. Também há o caso da agência instável, que cai e volta várias vezes:
+a cada volta ela derruba uma liderança estável.
+
+Alternativas: não fazer *preemption* (quem volta só aceita a líder atual e espera uma
+falha real para disputar), usar um período de "aquecimento" antes de concorrer, ou usar
+épocas/termos de liderança (como no Raft) para que mensagens de uma liderança antiga
+sejam reconhecidas e descartadas.
+
+### 3. Rede lenta (não fora do ar) com resposta acima de 1 s?
+
+O mesmo `TIMEOUT_MS` não distingue "morta" de "lenta" — para o `ClienteBully` as duas são
+"não respondeu". Consequências:
+
+- No **heartbeat**, uma líder viva mas lenta é dada como morta: as seguidoras fazem uma
+  eleição sem necessidade.
+- Na **eleição**, se a agência de ID maior responde em 1,2 s, quem perguntou já desistiu
+  dela e se declara líder; a maior, que recebeu a mensagem, faz a própria eleição e também
+  se declara. Por algum tempo há **duas agências achando que são líderes** — o que o
+  Bully assume que não acontece, porque o algoritmo foi pensado para um sistema
+  **síncrono** (atrasos limitados e conhecidos).
+
+Nesta implementação, o estrago é contido por duas coisas: a recusa de anúncio de ID menor
+(a maior, ao receber o anúncio da menor, faz eleição e se impõe) e o heartbeat que confere
+o conteúdo da resposta. Mas, enquanto a rede continuar lenta, o cluster pode oscilar.
+Mitigações: timeout maior que a latência esperada (configurável aqui), exigir algumas
+falhas seguidas antes de declarar a líder morta, ou um algoritmo que não dependa de
+sincronia para ser seguro (Raft/Paxos usam maioria e termos, não timeouts, para garantir
+uma líder só).
+
+---
+
+## Parte C — Observando a eleição (seção 7.3)
+
+Evidências: `historico-lideranca.png` (subida simultânea + failover + volta da 2) e
+`historico-escalonada.png` (subida escalonada).
+
+### 1. Quantas vezes a liderança mudou de mãos na tempestade da subida? Isso tem custo?
+
+Depende de como as agências sobem, e o `HistoricoLideranca` separa as duas contagens:
+
+- **Subida simultânea:** 1 troca efetiva (ninguém → 2), mas **4 declarações**
+  `TORNOU_LIDER` da própria 2. O histórico completo da execução (subida + failover + volta)
+  teve 31 eventos de eleição, 6 declarações e 3 trocas efetivas (2 → 1 → 2).
+- **Subida escalonada:** 3 trocas efetivas na subida (0 → 1 → 2), 9 eventos de eleição.
+
+Mesmo sem mudar o resultado final, há custo real:
+
+- **Rede:** cada eleição recebida gerou uma eleição nova, e cada declaração da 2 gerou 2
+  anúncios. Contando nos logs da subida simultânea das 15:48: 7 eleições iniciadas e
+  **12 mensagens HTTP entre agências** (4 de eleição + 8 de coordenador), quando 5 (3
+  eleições + 2 anúncios) bastariam.
+- **Tempo:** quem pergunta a uma agência fora do ar espera o timeout (1 s por agência). Na
+  subida escalonada, a 0 e a 1 foram líderes por ~10 s cada — tempo em que o resto do
+  sistema confiou numa líder que seria trocada logo em seguida.
+- **Trabalho jogado fora** (relevante no Sprint 4): uma líder que começa a coordenar algo e
+  é substituída segundos depois deixa esse trabalho para ser desfeito ou retomado.
+- **Relógio vetorial e logs:** cada mensagem incrementa o vetor. Isso tem um efeito
+  colateral visível na Parte E: uma eleição muda o vetor da agência e, portanto, faz
+  qualquer operação offline pendente dar conflito, mesmo sem ninguém ter mexido na conta.
+
+---
+
+## Parte D — App Flutter (seção 8.3)
+
+Evidências: `app-lider-atual.png`, `app-failover.png`, `app-fluxo-bancario.png` e o vídeo
+`videos/sprint3-app.webm`. O app foi capturado como **build web num Chromium com viewport
+de celular (412×915)**: esta máquina não tem emulador Android (nem espaço em disco para
+um). O mesmo código compila para Android (projeto `android/` gerado, com permissão de
+internet e HTTP em texto claro para a rede do laboratório) — `flutter run` no emulador usa
+`10.0.2.2` automaticamente.
+
+No failover visto pelo app (`app-failover.png`, execução final das 16:39): às 16:39:19 o
+painel mostrava "Agência 2"; a agência 2 foi encerrada às 16:39:20 e, sem tocar na tela, o
+painel passou a "Agência 1, confirmado pela agência 0" — o histórico do app registra a
+troca às 16:39:21, e o `Invoke-RestMethod` das 16:39:25 confirma `liderAtual 1` nas
+agências 0 e 1.
+
+### 1. Como o app decide a frequência de `/bully/lider`? Que trade-off?
+
+A cada **3 s** (`Intervalos.pollingLider`), o mesmo intervalo do heartbeat das agências.
+Consultar mais rápido que isso não mostra a troca mais cedo: a própria agência consultada
+só descobre a nova líder depois do heartbeat dela (até 3 s + timeout + eleição). O atraso
+total visto pelo usuário fica entre ~1 e ~7 s; no teste foram ~1 a 2 s.
+
+O trade-off no celular é rede e bateria: cada consulta acorda o rádio. Por isso o app:
+pergunta a **uma** agência por vez (não às 3), começando pela que respondeu da última vez;
+usa timeout curto (1,5 s) para não segurar conexões; e só faz polling enquanto a tela
+inicial está aberta (`Lideranca.parar()` no `dispose`). Num app de produção, eu também
+pararia o polling com o app em segundo plano (`AppLifecycleState.paused`) ou trocaria por
+*push* (WebSocket/FCM) avisando só quando a líder muda.
+
+### 2. Duas agências respondendo líderes diferentes numa transição: como o app se comporta?
+
+O app confia na **primeira agência que responder** e mostra também quem informou
+("confirmado pela agência 0 às 16:39:37"). Se ela ainda não soube da nova eleição, o painel
+mostra a líder antiga, ou "Eleição em andamento" quando `liderAtual` vem nulo. Na consulta
+seguinte, 3 s depois, a agência já terá recebido o anúncio e o painel se corrige sozinho.
+O histórico de trocas (funcionalidade adicional) registraria a ida e a volta, se houvesse.
+
+Não é um problema real **para um painel informativo**: é consistência eventual, e o
+algoritmo garante que as agências convergem. Seria um problema se o app usasse a líder para
+**decidir** algo (por exemplo, para onde mandar uma transação no Sprint 4). Aí a resposta
+de uma agência só não basta: o app teria de confirmar com a própria líder ("você é a
+líder?", que é o que o heartbeat das agências faz) ou deixar a agência de entrada
+encaminhar a operação para a líder. O app não tenta "votar" entre respostas: com 3
+agências e uma delas fora do ar, não há maioria confiável.
+
+### 3. Flutter × frontend web do Sprint 1: o que foi reaproveitável e o que mudou?
+
+**Reaproveitado (conceitos):** a mesma API REST, sem nenhuma rota nova para o fluxo
+bancário; o mesmo particionamento no cliente (conta `N` → agência `N % 3`, porta
+`4000 + OFFSET + N`); o JWT guardado e enviado em toda requisição, válido nas 3 agências;
+o tratamento de 401 voltando para o login; a separação em camadas — no web,
+`modelo.js` / `visao.js` / `controlador.js`; no app, `api.dart` + `banco.dart` (modelo e
+controle, `ChangeNotifier`) e `telas/` (visão, redesenhada por `ListenableBuilder`).
+
+**Pensado de outro jeito por ser mobile:**
+
+- **Rede não é garantida.** No web, sem rede a página simplesmente falha. No celular, cair
+  da rede é normal — daí o offline-first (Parte F) e o erro de rede ser um caso de primeira
+  classe (`ErroDeRede` × `ErroApi`).
+- **Armazenamento:** o web guarda só o token em `localStorage`; o app guarda sessão, contas
+  e fila no Hive, que precisa sobreviver ao sistema matar o app.
+- **Endereço do servidor:** no navegador, `localhost` é o PC; no emulador é `10.0.2.2`; num
+  celular é o IP do PC. O host virou configuração (tela de login / `--dart-define`).
+- **Atualização automática:** o web só relê o estado ao clicar em "Atualizar"; o app faz
+  polling sozinho (líder, contas, agências), com o cuidado de bateria descrito acima.
+- **Dinheiro em centavos (`int`)** em vez de `double`, e entrada de valores no formato
+  brasileiro ("25,50").
+- **Interface em toque:** diálogos por operação em vez de um formulário grande; erros em
+  SnackBar; conflitos em diálogo modal.
+
+---
+
+## Parte E — Sincronização offline-first no backend (seção 9.6)
+
+Evidência: `conflito-sincronizacao.png` (16:12:43): conta 30 lida com
+`vetorAtual [40,49,79]`; depósito direto de 50 → `[41,49,79]`; sincronizar um saque de 30
+com o vetor antigo → **409** `relacao: ANTES`, `vetorConhecido [40,49,79]`,
+`vetorAtual [41,49,79]`, `contaAtual.saldo 150.00`; reenviar com `[41,49,79]` → 200, saldo
+120,00 e vetor `[42,49,79]`.
+
+### 1. Por que comparar o vetor inteiro e não só verificar se o saldo mudou?
+
+Porque o saldo é só o **resultado** das operações; o vetor registra **que operações
+aconteceram**. Comparar saldo deixa passar dois casos:
+
+- **Mudanças que se anulam (ABA):** enquanto o app estava offline, entrou um depósito de 50
+  e saiu um saque de 50. O saldo é igual ao que o app viu, mas o estado não é — duas
+  operações que o usuário não conhece aconteceram. Pela comparação de saldo, "nada mudou".
+  O vetor avançou duas posições e acusa.
+- **Mudanças em outros campos ou contas que afetam a decisão,** sem mexer neste saldo: a
+  comparação de saldo só olha um número; o vetor cobre qualquer evento da agência (que,
+  como discutido na pergunta 2, é amplo até demais).
+
+Além disso, o vetor diz **como** os estados se relacionam: `ANTES` (o app está
+desatualizado — o caso normal), `DEPOIS` (o app conhece um estado mais novo que a agência —
+por exemplo, a agência reiniciou e perdeu eventos; teste
+`vetorDoAppAFrenteDaAgenciaTambemEhConflito`) ou `CONCORRENTES`. Saldo nenhum dá isso.
+
+### 2. Qualquer mudança no vetor da agência vira conflito, mesmo em outra conta. Por que essa simplificação existe e como torná-la precisa por conta?
+
+Existe porque o relógio vetorial do Sprint 2 é **por agência** (um contador por processo),
+não por conta: um depósito na conta 33 incrementa a mesma posição que um depósito na conta
+30. O vetor sabe que "algo aconteceu na agência 0", mas não em qual conta. Teste
+`eventoEmOutraContaDaMesmaAgenciaTambemEhConflitoSimplificacaoDoRoteiro`. Na prática é ainda
+mais amplo do que o roteiro sugere: **eventos do Bully também incrementam o vetor**. Uma
+eleição depois da queda de uma líder muda o vetor das três agências, e qualquer operação
+offline pendente vai dar 409 mesmo que ninguém tenha tocado na conta.
+
+O resultado é seguro (nunca aplica às cegas), só que pessimista: gera conflitos falsos, que
+custam uma decisão da pessoa usuária. Para tornar a detecção precisa por conta:
+
+- **Versão por conta:** cada conta guarda um contador de versão (ou o vetor do último
+  evento que a alterou). O app guarda essa versão; a sincronização compara só ela. É o
+  *optimistic locking* clássico (`version` / `ETag` + `If-Match`).
+- **Vetor por conta:** se a conta pudesse ser alterada em mais de um lugar (réplicas), cada
+  conta teria seu próprio vetor de versões — é o que bancos de dados como o Dynamo/Riak
+  fazem por chave.
+- Mais fino ainda: **verificar a regra de negócio** em vez da versão — um depósito é
+  comutativo e poderia ser aplicado mesmo com outra mudança no meio; um saque só precisa
+  que o saldo atual ainda cubra o valor. Isso troca "detectar conflito" por "resolver
+  conflito", o que o roteiro deixa explicitamente fora do escopo.
+
+### 3. No 409, o app deveria descartar, tentar de novo automaticamente ou perguntar?
+
+**Perguntar** — foi o que implementei, com uma exceção mecânica:
+
+- **Descartar** sozinho perde a intenção da pessoa sem avisar: ela fez um depósito e ele
+  simplesmente some. Inaceitável num app bancário.
+- **Tentar de novo automaticamente** com o vetor novo é "aplicar às cegas" com um passo a
+  mais: o 409 existe justamente porque o estado que a pessoa viu ao decidir não vale mais.
+  Ela decidiu sacar 10 com R$ 225,50 na tela; talvez com o saldo real (R$ 275,50, ou R$ 5)
+  a decisão fosse outra.
+- **Perguntar**, mostrando o que ela viu e o que é real, devolve a decisão a quem tem
+  contexto para tomá-la.
+
+A exceção: quando duas operações offline seguidas da mesma conta partiram do mesmo vetor e
+a primeira foi aceita, a segunda é enviada com o vetor devolvido pela primeira — o único
+evento novo é a própria operação da pessoa, que ela já conhece. Isso não é um retry de
+conflito; é o app atualizando o que sabe.
+
+---
+
+## Parte F — App Flutter offline-first (seção 10.3)
+
+Evidências (execução final, 16:39): `app-offline.png` (16:39:34 — depósito de R$ 25,00 em
+modo avião aparece como PENDENTE, com saldo provisório R$ 225,50 e o vetor conhecido
+`[16,17,22]`; a agência ainda mostra R$ 200,50 no `Invoke-RestMethod` ao lado; o painel da
+líder mostra "nenhuma agência respondeu"), `app-sincronizacao.png` (16:39:35 — só
+reconectar: a fila some, o saldo R$ 225,50 passa a "confirmado" e a agência confirma 225,50
+com o vetor `[17,17,22]`) e `app-conflito.png` (16:39:36–38). O "modo avião" é o `setOffline(true)` do
+Chromium (o `navigator.onLine` vira `false`), detectado pelo `connectivity_plus`.
+
+### 1. Qual biblioteca de armazenamento local e por quê? Alternativas?
+
+**Hive, na versão mantida pela comunidade (`hive_ce`).** Motivos:
+
+- **Funciona igual no Android e no navegador** (arquivos no aparelho; IndexedDB na web).
+  Como as evidências foram feitas no build web, isso foi decisivo — o `sqflite` não roda
+  na web sem outro pacote.
+- **Os dados são pequenos e acessados por chave:** sessão, contas por `dono:id`, fila por
+  `idOperacao`. Não preciso de SQL nem de joins.
+- **Sem geração de código:** guardo cada registro como JSON (`Box<String>`), sem
+  `TypeAdapter` nem `build_runner`.
+- O `hive` original está sem manutenção; o `hive_ce` é o fork com a mesma API e suporte às
+  versões atuais do Dart.
+
+Alternativas consideradas: **sqflite** (SQL de verdade, transações; mas não roda na web e
+pede esquema/migrações para algo que é chave-valor); **Drift** (SQL tipado e reativo,
+excelente para um app maior, mas com geração de código e mais peso); **shared_preferences**
+(simples, mas pensado para preferências e não para uma fila de operações);
+**Isar/ObjectBox** (rápidos, mas mais complexos do que o problema pede).
+
+Ressalva honesta: o token JWT também fica no Hive, sem criptografia. Num app real ele iria
+para o `flutter_secure_storage` (Keystore/Keychain).
+
+### 2. O que aconteceu na tela quando a sincronização foi recusada? Por que essa abordagem?
+
+Sequência registrada em `app-conflito.png` (16:39:36–16:39:38):
+
+1. Offline, saque de R$ 10,00 na conta 30: aparece **"R$ 215,50 — PROVISÓRIO, 1
+   pendente"** e a SnackBar "guardado no aparelho, PENDENTE de sincronização".
+2. Pelo PowerShell, com o app ainda offline, depósito de R$ 50,00 direto na API → saldo
+   real 275,50, vetor `[18,17,22]`.
+3. A conexão volta. O app envia o saque com o vetor que conhecia `[17,17,22]` e recebe 409.
+   Abre sozinho um diálogo **"A agência recusou a sincronização"**, explicando que a conta
+   mudou enquanto ele estava offline e que **nada foi aplicado**, com: "Saque de R$ 10,00 na
+   conta 30 (feita offline às 16:39:36) — NÃO APLICADA", "vetor [17,17,22] -> [18,17,22]",
+   "Saldo que você via: R$ 225,50 →
+   saldo real agora: R$ 275,50", e três opções: **Aplicar sobre o saldo atual**,
+   **Descartar**, **Decidir depois**. O saldo da conta passa a mostrar o real (275,50), sem
+   o "provisório" — uma operação em conflito não entra no saldo provisório.
+4. Escolhida "Aplicar sobre o saldo atual", o app reenviou com o vetor do 409 e a conta
+   ficou em R$ 265,50, confirmado, com o vetor `[19,17,22]`.
+
+Se a pessoa escolhe "Decidir depois", a operação continua num cartão vermelho
+"Sincronização recusada" no topo da tela, com os mesmos botões. Operações seguintes da
+mesma conta que estavam na fila também param (marcadas "parada: uma operação anterior da
+mesma conta entrou em conflito"), porque partiram do mesmo estado desatualizado.
+
+Por quê: o requisito é que o 409 seja **visível**, e a resposta da pergunta E3 — a decisão
+é da pessoa. O diálogo modal garante que ela veja no momento em que acontece; o cartão
+garante que a decisão não se perca se ela fechar o diálogo; mostrar "o que você viu × o que
+é real" dá o contexto para decidir.
+
+### 3. Que risco a UI otimista traz para um app bancário? Como o design reduz esse risco?
+
+O risco é a pessoa **agir com base em dinheiro que ainda não existe** (ou que já não
+existe): ver R$ 225,50 depois de um depósito offline e pagar uma conta contando com ele, ou
+fazer um saque offline que a agência vai recusar por saldo insuficiente no saldo real. Num
+banco, "a tela disse que eu tinha" vira um problema financeiro e de confiança.
+
+Como o design reduz:
+
+- **O provisório nunca se passa por confirmado:** cor diferente, selo "PROVISÓRIO — N
+  pendente(s)", e logo abaixo o "último saldo confirmado pela agência". A fila fica no
+  topo da tela, com "PENDENTE" e a hora em que cada operação foi feita.
+- **Limite local:** offline, não deixa sacar/transferir mais que o saldo provisório.
+- **Nada some em silêncio:** recusas (409 ou 400) viram diálogo + cartão; o saldo exibido
+  volta ao real na hora.
+- **Ordem preservada:** se a conta tem algo na fila, uma nova operação entra atrás dela,
+  mesmo online, para não "furar" a fila.
+- **A agência tem a palavra final:** o app só envia intenções; quem aplica (e verifica
+  saldo e vetor) é a agência, com idempotência para reenvios.
+- **O que não fiz offline:** abrir conta. Um sistema real limitaria também o valor das
+  operações offline (como os limites de transação de PIX/cartão offline).
+
+---
+
+## Funcionalidade adicional (seção 2.1) — painel do cluster no app
+
+Evidência: `funcionalidade-adicional.png` (16:39:41).
+
+No fim da tela inicial, um cartão **"Agências do cluster"** consulta `GET /status` das 3
+agências em paralelo a cada 5 s e mostra, para cada uma, se está no ar, a latência, quantas
+contas tem e o vetor atual; a líder tem um ícone. Abaixo, **"Últimas trocas de liderança
+(vistas por este app)"**: cada mudança percebida pelo painel da líder vira um registro
+(hora, de → para, quem informou), guardado no Hive.
+
+No print, a agência 1 (que não era a líder) foi derrubada: o cartão mostra "2 de 3
+respondendo", "Agência 1 — FORA DO AR (sem resposta às 16:39:39)" em vermelho, a 2 com o
+ícone de líder; o histórico traz exatamente o failover do teste D3: "16:39:09 líder inicial
+→ agência 2", "16:39:21 agência 2 → agência 1", "16:39:30 agência 1 → agência 2". O
+`Test-NetConnection` ao lado confirma a porta 4001 fechada.
+
+**Por que escolhi:** o painel da líder responde "quem coordena"; este responde "quem está
+vivo" — juntos mostram o heartbeat funcionando visto de fora (a líder fica vermelha aqui e,
+segundos depois, o painel de cima troca). É útil para demonstrar o algoritmo em sala sem
+abrir terminais, e o histórico deixa visível no celular o que o `HistoricoLideranca`
+reconstrói a partir dos logs. Além disso (menor, não conta como a funcionalidade):
+heartbeat e timeouts do Bully configuráveis por variável de ambiente.
+
+---
+
+## Continuidade (Sprints 1 e 2, sem regressão)
+
+- **Testes automatizados:** 61 testes Java (`cd agencia && ./mvnw test`), incluindo os 37
+  do Sprint 2 sem alteração de comportamento; 10 testes Dart (`flutter test`); 8 testes
+  Playwright (`e2e\rodar-sprint3.ps1`).
+- **JWT e frontend web** (`regressao-frontend-jwt.png`, 16:39:51): o frontend do Sprint 1,
+  sem nenhuma mudança, fez login da Ana e uma transferência local 30 → 33 ("TRANSFERENCIA
+  LOCAL (mesma agencia 0) ... Vetor do evento: [22,21,27]"). Sem token, `GET /contas/30` →
+  401; com token → 200, agora com `vetorAtual`. Os campos novos (`vetorAtual`) não quebram
+  o frontend, que só lê os campos antigos.
+- **Mensageria/relógio vetorial:** as regras do vetor não mudaram (só ganharam
+  `obterVetorAtual` e o compare-and-increment); o `MesclarLogs` continua lendo os logs, que
+  agora também têm eventos do Bully. Uma mudança pequena no `creditarRemoto`: o
+  `aoReceber` passou para dentro da trava da conta, para o snapshot (saldo, vetor) ser
+  consistente. **O que não pude verificar nesta máquina:** a transferência entre agências
+  pelo RabbitMQ, porque a `RABBITMQ_URL` (CloudAMQP) não está configurada aqui; sem broker
+  ela responde 503 com estorno, que é o comportamento projetado no Sprint 2. A suíte
+  `e2e/rodar.ps1` do Sprint 2 cobre esse caminho assim que a variável for definida.
+
+## Declaração de uso de IA
+
+Como nos sprints anteriores: a implementação do Sprint 3 (backend, app Flutter, scripts,
+testes e o texto destas respostas) foi desenvolvida com apoio do **Claude Code
+(Anthropic)**, a partir do código dos Sprints 1 e 2 e do roteiro. As execuções e
+evidências são reais, feitas nesta máquina em 15/11/2026. Revisei o código entregue e
+consigo explicar cada parte, em especial as decisões listadas no início desta seção.

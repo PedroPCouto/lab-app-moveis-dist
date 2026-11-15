@@ -7,14 +7,36 @@ agência `N % 3`, e nenhuma agência sabe o saldo das contas das outras.
 | Sprint | Unidade | Tecnologia | Conceito de SD | Situação |
 |---|---|---|---|---|
 | 1 | U2 — Desenvolvimento Web | API REST / MVC | Relógio lógico de Lamport | concluído |
-| **2** | U3 — Comunicação indireta | Mensageria / Pub-Sub (RabbitMQ) | Relógio vetorial | **este** |
-| 3 | U4 — Desenvolvimento Móvel | App Flutter | Consenso (eleição de líder) | — |
+| 2 | U3 — Comunicação indireta | Mensageria / Pub-Sub (RabbitMQ) | Relógio vetorial | concluído |
+| **3** | U4 — Desenvolvimento Móvel | App Flutter | Consenso (eleição de líder) + offline-first | **este** |
 | 4 | U5 — Computação em Nuvem | Containers | Transações distribuídas (2PC/Saga) | — |
 
 Linguagem escolhida para os 4 sprints: **Java 25 + Spring Boot 4.1** (+ Spring AMQP no Sprint 2).
+App mobile (Sprint 3): **Flutter 3.50**, em [`app_mobile/`](app_mobile/README.md).
+
+> Continuando o projeto (pessoa ou IA)? Comece por [`AGENTS.md`](AGENTS.md) e
+> [`docs/SPRINT3-ESTADO.md`](docs/SPRINT3-ESTADO.md): estado atual, decisões e ambiente.
 As respostas às perguntas dos roteiros estão em [`RESPOSTAS.md`](RESPOSTAS.md).
 
 ---
+
+## O que mudou no Sprint 3
+
+- **Eleição de líder (Bully)** entre as 3 agências (`BullyService`): ao subir, cada agência
+  faz uma eleição; vence a de maior id ativa. Rotas públicas `POST /bully/eleicao`,
+  `POST /bully/coordenador` e `GET /bully/lider`. Toda mensagem passa pelo relógio vetorial.
+- **Heartbeat** a cada 3 s: se a líder não responde (ou não se reconhece mais como líder),
+  as outras fazem uma nova eleição sozinhas. Parâmetros por variável de ambiente
+  (`BULLY_HEARTBEAT_MS`, `BULLY_TIMEOUT_MS`, `BULLY_HABILITADO`, `AGENCIAS_HOST`).
+- **Histórico de lideranças** (`tools/HistoricoLideranca`): reconstrói "líder inicial →
+  queda → nova líder" a partir dos logs.
+- **Sincronização offline-first:** toda leitura/escrita de conta devolve `vetorAtual`;
+  `POST /contas/{id}/sincronizar` aplica uma operação feita offline só se o vetor que o app
+  conhecia ainda é o vetor da agência — senão **409** com o estado real.
+- **App Flutter** (`app_mobile/`): fluxo bancário completo, painel da líder atualizado a
+  cada 3 s, modo offline-first (Hive + fila + UI otimista + sincronização automática + 409
+  visível) e, como funcionalidade adicional, o painel do cluster (agências ativas + histórico
+  de trocas de líder).
 
 ## O que mudou no Sprint 2
 
@@ -56,8 +78,11 @@ iceibank/
 │       ├── model/ dto/ exception/
 │       └── tools/                MesclarLogs (linha do tempo causal) e GerarTokenExpirado
 ├── frontend/                     HTML/CSS/JS puro, sem build
+├── app_mobile/                   app Flutter (Sprint 3) - ver app_mobile/README.md
+├── e2e/                          testes Playwright gravados (sprint2.spec.js, sprint3.spec.js)
+├── docs/                         roteiro do Sprint 3 e SPRINT3-ESTADO.md (estado e decisões)
 ├── scripts/                      subir/parar agências, demos e geração de prints
-├── evidencias/sprint1/ sprint2/  prints pedidos nos roteiros (+ as saídas em texto)
+├── evidencias/sprint1/ 2/ 3/     prints pedidos nos roteiros (+ as saídas em texto e vídeos)
 ├── RESPOSTAS.md
 └── README.md
 ```
@@ -152,29 +177,62 @@ eventos de agências diferentes cujos vetores são **concorrentes** e confere, p
 transferência entre agências (casada pelo `idTransferencia`), que débito/envio → crédito saem
 como `ANTES`.
 
-### 5. Testes
+### 5. Sprint 3 — demonstrações em PowerShell (sem jq/curl/Python)
+
+```powershell
+$env:JAVA_HOME = "C:\caminho\do\jdk-25"   # ou o script acha %LOCALAPPDATA%\AndroidDev\jdk-25*
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 eleicao      # sobe as 3 juntas (Parte A)
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 escalonada   # sobe 0, 1, 2 com 4 s de intervalo
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 failover     # derruba a líder (Parte B)
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 historico    # HistoricoLideranca (Parte C)
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 conflito     # 409 da sincronização (Parte E)
+powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 parar        # derruba todas
+```
+
+`-Saida evidencias\sprint3\saidas\X.txt` grava a saída (com `Get-Date`) e gera o PNG em
+`evidencias\sprint3\`. O histórico também roda direto: `cd agencia && ./mvnw -q exec:java@historico-lideranca`.
+
+### 6. App Flutter
+
+```powershell
+cd app_mobile
+flutter pub get
+flutter run -d chrome                                  # ou um emulador Android (usa 10.0.2.2)
+flutter build web --release --no-web-resources-cdn     # build usado pelos testes e2e
+```
+
+`e2e\rodar-sprint3.ps1` sobe as agências, serve o build web e roda os 8 testes gravados do
+Sprint 3, que geram os prints do app em `evidencias/sprint3/` e o vídeo
+`evidencias/sprint3/videos/sprint3-app.webm`.
+
+### 7. Testes
 
 ```bash
-cd agencia && ./mvnw test        # 37 testes (os de serviço usam um mock no lugar do RabbitMQ)
+cd agencia && ./mvnw test        # 61 testes (Bully com rede em memória, sincronização, Sprints 1-2)
+cd app_mobile && flutter test    # 10 testes da lógica offline do app (agência simulada)
 ```
 
 ## API
 
-Todas as rotas exigem `Authorization: Bearer <token>`, **exceto** `POST /auth/login` e
-`GET /status`.
+Todas as rotas exigem `Authorization: Bearer <token>`, **exceto** `POST /auth/login`,
+`GET /status` e as rotas `/bully/*` (chamadas entre agências e pelo painel do app).
 
 | método | rota | descrição |
 |---|---|---|
 | `POST` | `/auth/login` | recebe `{usuario, senha}`, devolve o JWT (validade 30 min) |
 | `GET` | `/status` | *(pública)* identidade, **relógio vetorial**, contas e mensagens em cada fila |
 | `POST` | `/contas` | cria conta; recusa se `id % 3` não for esta agência |
-| `GET` | `/contas` | contas do usuário autenticado nesta agência |
-| `GET` | `/contas/{id}` | consulta saldo (só o dono) |
+| `GET` | `/contas` | contas do usuário autenticado nesta agência (com `vetorAtual`) |
+| `GET` | `/contas/{id}` | consulta saldo (só o dono); *Sprint 3:* inclui `vetorAtual` |
 | `POST` | `/contas/{id}/depositar` | `{valor}` |
 | `POST` | `/contas/{id}/sacar` | `{valor}` |
 | `GET` | `/contas/{id}/historico` | eventos da conta, com o vetor de cada um |
 | `POST` | `/transferencias` | `{idOrigem, idDestino, valor}`; local na hora, entre agências via RabbitMQ |
 | `POST` | `/mensagens-mortas/reprocessar` | *(Sprint 2, adicional)* devolve à fila os créditos mortos desta agência |
+| `POST` | `/contas/{id}/sincronizar` | *(Sprint 3)* `{idOperacao, tipo, valor, vetorConhecido, idDestino?}` (tipo `DEPOSITO`, `SAQUE` ou `TRANSFERENCIA`); **409** `{erro, relacao, vetorConhecido, vetorAtual, contaAtual}` se o vetor mudou |
+| `POST` | `/bully/eleicao` | *(Sprint 3, pública)* `{origemId, vetorEnvio}`; o 200 é o "OK" do Bully |
+| `POST` | `/bully/coordenador` | *(Sprint 3, pública)* `{liderId, vetorEnvio}` |
+| `GET` | `/bully/lider` | *(Sprint 3, pública)* `{idAgencia, liderAtual, eleicaoEmAndamento, horaParede}` |
 
 Erros seguem sempre o formato `{"erro": "mensagem"}`. Uma transferência entre agências que
 responde **200** significa "o broker confirmou a mensagem", **não** "o crédito já foi
@@ -192,8 +250,21 @@ aplicado". Se o RabbitMQ estiver indisponível, a resposta é **503** e o débit
   com ele, o relógio vetorial) sobrevive em disco.
 - **O consumidor não usa JWT:** quem tiver a AMQP URL pode publicar créditos. Ver
   `RESPOSTAS.md`, Parte C, pergunta 3.
+- **Sprint 3 — líder só informativa:** nenhuma operação passa pela líder ainda (Sprint 4).
+  As rotas `/bully/*` não têm autenticação (Parte A, pergunta 3).
+- **Sprint 3 — conflito por agência, não por conta:** qualquer evento da agência (inclusive
+  uma eleição) faz uma sincronização offline pendente dar 409 (Parte E, pergunta 2).
 
 ## Evidências
+
+`evidencias/sprint3/` traz os 8 prints pedidos no roteiro do Sprint 3 (`eleicao-inicial`,
+`failover`, `historico-lideranca`, `app-lider-atual`, `app-failover`,
+`conflito-sincronizacao`, `app-offline`, `app-sincronizacao`), mais `app-conflito`,
+`app-fluxo-bancario`, `funcionalidade-adicional`, `regressao-frontend-jwt`,
+`eleicao-escalonada`, `historico-escalonada` e o vídeo `videos/sprint3-app.webm`. Os prints
+do app combinam a tela (build web num Chromium com viewport de celular) com a saída real de
+comandos PowerShell (`Get-Date`, `Invoke-RestMethod`) executados no mesmo instante.
+
 
 `evidencias/sprint2/` traz os prints do Sprint 2 — `transferencia-assincrona.png`,
 `resiliencia-fila.png`, `linha-do-tempo-causal.png`, `funcionalidade-adicional.png`, além de
