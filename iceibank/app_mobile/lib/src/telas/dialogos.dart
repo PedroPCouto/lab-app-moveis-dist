@@ -10,7 +10,6 @@ class DadosOperacao {
   const DadosOperacao(this.valorCentavos, [this.idDestino]);
 }
 
-/// Formulario de deposito, saque ou transferencia. Devolve null se cancelado.
 Future<DadosOperacao?> pedirOperacao(BuildContext context, TipoOperacao tipo, Conta conta) {
   final valor = TextEditingController();
   final destino = TextEditingController();

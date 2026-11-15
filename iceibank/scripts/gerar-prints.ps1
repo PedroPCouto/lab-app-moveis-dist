@@ -1,13 +1,3 @@
-<#
-  Converte a saida de texto de um comando em um PNG com cara de terminal.
-
-  Versao Windows/PowerShell do gerar-prints.py (que depende de Pillow e das fontes
-  DejaVu do Linux). A saida e a saida real do comando - inclusive a linha com a
-  data/hora da execucao, que o proprio demo.sh imprime no inicio.
-
-  Uso:
-    powershell -ExecutionPolicy Bypass -File scripts\gerar-prints.ps1 entrada.txt saida.png ["Titulo da janela"]
-#>
 param(
   [Parameter(Mandatory = $true)][string]$Entrada,
   [Parameter(Mandatory = $true)][string]$Saida,

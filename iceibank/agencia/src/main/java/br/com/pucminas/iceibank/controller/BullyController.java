@@ -14,11 +14,6 @@ import br.com.pucminas.iceibank.dto.MensagemEleicao;
 import br.com.pucminas.iceibank.service.BullyService;
 import jakarta.validation.Valid;
 
-/**
- * Rotas do Bully (secao 5.2 do roteiro). Sao publicas - sem JWT - como no exemplo: quem
- * chama e outra agencia, nao uma pessoa usuaria. As consequencias disso estao discutidas
- * na Pergunta 3 da Parte A (RESPOSTAS.md).
- */
 @RestController
 @RequestMapping("/bully")
 public class BullyController {
@@ -28,7 +23,6 @@ public class BullyController {
         this.bully = bully;
     }
 
-    // O 200 e o "OK" do algoritmo: "estou viva e vou conduzir a eleicao daqui em diante".
     @PostMapping("/eleicao")
     public Map<String, Object> eleicao(@Valid @RequestBody MensagemEleicao mensagem) {
         bully.receberEleicao(mensagem.origemId(), mensagem.vetorEnvio());

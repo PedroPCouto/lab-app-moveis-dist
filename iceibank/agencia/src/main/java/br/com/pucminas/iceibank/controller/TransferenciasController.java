@@ -28,8 +28,6 @@ public class TransferenciasController {
                 requisicao.idOrigem(), requisicao.idDestino(), requisicao.valor(), auth);
     }
 
-    // Funcionalidade adicional: devolve os creditos que morreram nesta agencia (conta nao
-    // encontrada) para a fila, depois que o problema foi resolvido (ex.: conta recriada).
     @PostMapping("/mensagens-mortas/reprocessar")
     public Map<String, Object> reprocessarMensagensMortas(
             @RequestAttribute(Autenticacao.ATRIBUTO) Autenticacao auth) {
@@ -40,6 +38,4 @@ public class TransferenciasController {
                 "solicitadoPor", auth.sujeito());
     }
 
-    // A rota POST /contas/{id}/creditar-remoto do Sprint 1 deixou de existir: o credito
-    // remoto agora chega pela fila do RabbitMQ (ConsumidorCreditos).
 }

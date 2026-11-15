@@ -100,13 +100,6 @@ public class ContaService {
         return conta;
     }
 
-    // ---- Sprint 3, Parte E: sincronizacao offline-first -------------------------------
-
-    /**
-     * Saldo e vetor lidos juntos, com a conta travada: toda operacao que muda o saldo desta
-     * conta incrementa o vetor sob a mesma trava, entao o par nunca mistura "saldo de antes"
-     * com "vetor de depois" (ou vice-versa) para esta conta.
-     */
     public ContaComVetor comVetor(Conta conta) {
         synchronized (conta) {
             return ContaComVetor.de(conta, relogio.valorAtual());
@@ -117,10 +110,6 @@ public class ContaService {
         return contasDoUsuario(auth).stream().map(this::comVetor).toList();
     }
 
-    /**
-     * Compara o vetor que o app conhecia com o vetor atual da agencia (secao 9.3). Qualquer
-     * relacao diferente de IGUAIS e conflito. Deve ser chamado com a conta travada.
-     */
     public void verificarVetor(Conta conta, int[] vetorConhecido) {
         validarTamanho(vetorConhecido);
         int[] atual = relogio.valorAtual();
@@ -130,10 +119,6 @@ public class ContaService {
         }
     }
 
-    /**
-     * O evento local da operacao sincronizada, so se nada aconteceu na agencia desde a
-     * {@link #verificarVetor} (compare-and-increment no relogio). Com a conta travada.
-     */
     public int[] eventoLocalSeNadaMudou(Conta conta, int[] vetorConhecido) {
         return relogio.eventoLocalSeIgual(vetorConhecido).orElseThrow(() -> {
             int[] atual = relogio.valorAtual();
@@ -142,11 +127,6 @@ public class ContaService {
         });
     }
 
-    /**
-     * Deposito ou saque feito offline pelo app. Ordem das verificacoes: conflito primeiro
-     * (se o estado mudou, nem o saldo que o app viu vale mais), depois saldo suficiente.
-     * Devolve o saldo e o vetor exatamente do instante da operacao.
-     */
     public ContaComVetor aplicarSincronizado(Conta conta, String tipo, BigDecimal valor, int[] vetorConhecido,
                                              String idOperacao) {
         synchronized (conta) {

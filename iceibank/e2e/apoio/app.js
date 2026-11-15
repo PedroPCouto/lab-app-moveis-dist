@@ -1,12 +1,9 @@
-// Acoes no app Flutter (build web) pela arvore de acessibilidade: o app liga a semantica
-// no navegador (main.dart), entao campos e botoes aparecem com os mesmos rotulos da tela.
 const { expect } = require('@playwright/test');
 const agencias = require('./agencias');
 
 async function digitar(page, nome, texto) {
   const campo = page.getByRole('textbox', { name: nome });
   await campo.click();
-  // o Flutter cria o <input> de edicao ao focar: sem a pausa, os primeiros caracteres se perdem
   await page.waitForTimeout(400);
   await page.keyboard.press('Control+A');
   await page.keyboard.type(String(texto), { delay: 50 });
@@ -42,7 +39,6 @@ async function operar(page, id, botao, { valor, destino }) {
   await page.getByRole('button', { name: 'Confirmar' }).click();
 }
 
-// Chamadas diretas a API (fora do navegador): preparar contas e simular "outro caminho".
 async function api(metodo, idAgencia, caminho, corpo, token) {
   const resposta = await fetch(agencias.url(idAgencia) + caminho, {
     method: metodo,

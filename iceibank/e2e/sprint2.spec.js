@@ -1,11 +1,3 @@
-// Testes ponta a ponta do Sprint 2, gravados em video. Rodam contra o RabbitMQ real
-// (RABBITMQ_URL) e as 3 agencias de verdade, dirigindo o frontend como um usuario.
-//
-//   A - transferencia entre agencias, assincrona, via RabbitMQ
-//   B - agencia de destino fora do ar: a mensagem fica retida na fila
-//   C - fila de mortas (funcionalidade adicional): recriar a conta e reprocessar
-//
-// B e C sao a mesma historia em sequencia, por isso o arquivo roda em modo serial.
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
@@ -15,10 +7,6 @@ const PASTA_VIDEOS = path.resolve(__dirname, '..', 'evidencias', 'sprint2', 'vid
 
 test.describe.configure({ mode: 'serial' });
 
-// ---------------------------------------------------------------- legenda no video
-
-// Faixa fixa no rodape da pagina com o passo atual e a data/hora correndo. Sobrevive a
-// recarregamentos (sessionStorage) e nao intercepta cliques (pointer-events: none).
 function scriptDaLegenda(tituloDoTeste) {
   const montar = () => {
     if (document.getElementById('__legenda')) return;
@@ -50,7 +38,6 @@ function scriptDaLegenda(tituloDoTeste) {
   else montar();
 }
 
-// foco: elemento a centralizar na tela durante a legenda (para nao ficar sob a faixa).
 async function legendar(page, texto, pausaMs = 2200, foco = null) {
   if (foco) await foco.evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   await page.evaluate((t) => window.__legendar(t), texto);
@@ -58,8 +45,6 @@ async function legendar(page, texto, pausaMs = 2200, foco = null) {
 }
 
 const cartaoDeFilas = (page) => page.locator('#corpoFilas');
-
-// ---------------------------------------------------------------- apoio de UI e de API
 
 async function entrar(page, usuario, senha, idAgencia) {
   await page.selectOption('#agenciaLogin', String(idAgencia));
@@ -84,8 +69,6 @@ const quantidadeNaFila = (page, nome) => page.locator('#corpoFilas tr', {
   has: page.locator('code', { hasText: new RegExp(`^${nome.replace(/\./g, '\\.')}$`) }),
 }).locator('td').nth(1);
 
-// O frontend so rele o estado ao clicar em Atualizar: clica ate a condicao valer
-// (o credito e aplicado de forma assincrona, nao no instante da resposta).
 async function atualizarAte(page, verificacao, limiteMs = 20_000) {
   await expect(async () => {
     await page.click('#botaoAtualizar');
@@ -119,8 +102,6 @@ async function criarConta(usuario, senha, idAgencia, conta) {
   return api(idAgencia, 'POST', '/contas', token, conta);
 }
 
-// ---------------------------------------------------------------- ciclo de vida
-
 test.beforeAll(async () => {
   test.setTimeout(240_000);
   agencias.verificarPreRequisitos();
@@ -128,7 +109,6 @@ test.beforeAll(async () => {
   agencias.limparLogs();
   await Promise.all([0, 1, 2].map((id) => agencias.subir(id)));
 
-  // Equivale ao "demo.sh preparar": uma conta por agencia (conta N mora na agencia N % 3).
   await criarConta('ana', 'ana123', 0, { id: 0, nomeAluno: 'Ana', saldoInicial: 200 });
   await criarConta('bruno', 'bruno123', 1, { id: 1, nomeAluno: 'Bruno', saldoInicial: 80 });
   await criarConta('carla', 'carla123', 2, { id: 2, nomeAluno: 'Carla', saldoInicial: 120 });
@@ -143,7 +123,6 @@ test.beforeEach(async ({ page }, testInfo) => {
   await page.goto('/');
 });
 
-// Copia o video de cada teste para evidencias/sprint2/videos com um nome legivel.
 test.afterEach(async ({ page }, testInfo) => {
   const video = page.video();
   await page.close();
@@ -152,8 +131,6 @@ test.afterEach(async ({ page }, testInfo) => {
   const nome = testInfo.title.split(' - ')[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   await video.saveAs(path.join(PASTA_VIDEOS, `${nome}.webm`));
 });
-
-// ---------------------------------------------------------------- testes
 
 test('teste A - transferencia entre agencias via RabbitMQ', async ({ page }) => {
   await legendar(page, 'TESTE A - Transferencia entre agencias, assincrona, via RabbitMQ\n'
@@ -170,8 +147,6 @@ test('teste A - transferencia entre agencias via RabbitMQ', async ({ page }) => 
   await page.click('#formularioTransferencia button[type=submit]');
   await expect(page.locator('#mensagem')).toContainText('publicada no RabbitMQ');
   const texto = await page.locator('#mensagem').textContent();
-  // Sprint 3: com o Bully, as agencias ja trocaram mensagens desde a subida, entao o vetor da
-  // agencia 0 nao e mais [N,0,0] - so a posicao 0 (a dela) importa para esta verificacao.
   const [vetorEnvio, posicaoOrigem] = texto.match(/Vetor do evento: \[(\d+),\d+,\d+\]/);
   await legendar(page, `Resposta imediata: "publicada". 200 agora significa "o broker aceitou a mensagem",\n`
     + `nao "o credito ja foi aplicado". O envio levou o vetor ${vetorEnvio.replace('Vetor do evento: ', '')}.`, 4000);

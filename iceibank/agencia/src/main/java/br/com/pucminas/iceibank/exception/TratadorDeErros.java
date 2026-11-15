@@ -25,8 +25,6 @@ public class TratadorDeErros {
         return ResponseEntity.status(e.getStatus()).body(Map.of("erro", e.getMessage()));
     }
 
-    // Sprint 3, Parte E: o 409 da sincronizacao leva os dois vetores e o estado real da conta,
-    // para o app decidir o que fazer (secao 9.3).
     @ExceptionHandler(ConflitoSincronizacaoException.class)
     public ResponseEntity<Map<String, Object>> tratarConflitoSincronizacao(ConflitoSincronizacaoException e) {
         Map<String, Object> corpo = new LinkedHashMap<>();
@@ -55,7 +53,6 @@ public class TratadorDeErros {
         return ResponseEntity.badRequest().body(Map.of("erro", "Corpo da requisicao ausente ou mal formado."));
     }
 
-    // Ex.: vetor com numero errado de posicoes numa mensagem do Bully (RelogioVetorial.aoReceber).
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> tratarArgumentoInvalido(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("erro", String.valueOf(e.getMessage())));
@@ -63,8 +60,6 @@ public class TratadorDeErros {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> tratarInesperado(Exception e) {
-        // Rota inexistente, metodo nao suportado etc.: o proprio Spring ja sabe o status
-        // certo (404, 405...). Sem isto, POST na antiga /creditar-remoto virava 500.
         if (e instanceof ErrorResponse resposta) {
             HttpStatusCode codigo = resposta.getStatusCode();
             String detalhe = resposta.getBody().getDetail();

@@ -12,8 +12,6 @@ import 'package:iceibank_app/src/conectividade.dart';
 import 'package:iceibank_app/src/config.dart';
 import 'package:iceibank_app/src/modelos.dart';
 
-/// Agencia 0 de mentira, com as mesmas regras do backend para a conta 30: vetor da
-/// agencia, comparacao no /sincronizar, 409 com contaAtual.
 class AgenciaFalsa {
   int saldoCentavos = 10000;
   List<int> vetor = [5, 0, 0];
@@ -74,7 +72,7 @@ void main() {
         const Sessao(token: 't', usuario: 'ana', nome: 'Ana', agenciaEntrada: 0, host: 'localhost'));
     final api = ApiCliente(const ConfigAgencias(host: 'localhost'), cliente: MockClient(agencia.responder));
     banco = Banco(api, armazenamento, Conectividade());
-    await banco.recarregarContas(); // o app "ja leu" a conta 30 uma vez, online
+    await banco.recarregarContas();
   });
 
   tearDown(() async {
@@ -139,7 +137,7 @@ void main() {
     await banco.sacar(30, 1000);
     agencia
       ..eventoLocal()
-      ..saldoCentavos = 15000; // mudou "por outro caminho" enquanto o app estava offline
+      ..saldoCentavos = 15000;
     voltarOnline();
     final anunciadas = <List<OperacaoPendente>>[];
     final assinatura = banco.recusas.listen(anunciadas.add);
@@ -185,7 +183,6 @@ void main() {
     agencia.noAr = false;
 
     final msg = await banco.depositar(30, 500);
-    // a tentativa de sincronizar disparada logo apos enfileirar tambem falha por rede
     while (banco.sincronizando) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }

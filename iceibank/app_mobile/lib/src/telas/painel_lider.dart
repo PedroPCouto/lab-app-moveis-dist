@@ -3,8 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../lideranca.dart';
 import '../modelos.dart';
 
-/// Parte D: o consenso deixa de ser so log de terminal e aparece na tela. Reconstruido a
-/// cada consulta (3 s) via ListenableBuilder - nenhum botao de "atualizar".
 class PainelLider extends StatelessWidget {
   final Lideranca lideranca;
 

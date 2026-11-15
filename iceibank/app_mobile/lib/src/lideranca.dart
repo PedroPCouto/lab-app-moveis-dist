@@ -7,14 +7,6 @@ import 'armazenamento.dart';
 import 'config.dart';
 import 'modelos.dart';
 
-/// Parte D: descobre qual agencia e a lider consultando `GET /bully/lider`.
-///
-/// - Consulta a cada [Intervalos.pollingLider] (3 s, o mesmo ritmo do heartbeat das
-///   agencias), sem a pessoa usuaria precisar atualizar a tela.
-/// - Pergunta a UMA agencia por vez: primeiro a que respondeu da ultima vez; se ela nao
-///   responder (fora do ar), tenta as outras antes de desistir.
-/// - Se a agencia consultada ainda nao sabe da nova eleicao, o painel mostra o que ela
-///   sabe; a proxima consulta (3 s depois) corrige. Nao tenta "votar" entre respostas.
 class Lideranca extends ChangeNotifier {
   final ApiCliente _api;
   final Armazenamento _armazenamento;
@@ -29,7 +21,6 @@ class Lideranca extends ChangeNotifier {
   List<int> tentadasNaUltimaConsulta = [];
   int _preferida = 0;
 
-  /// Funcionalidade adicional: trocas de lideranca observadas pelo app (mais recente primeiro).
   List<TrocaDeLider> trocas = [];
 
   Lideranca(this._api, this._armazenamento) {
@@ -65,12 +56,12 @@ class Lideranca extends ChangeNotifier {
           _registrar(agencia, resposta['liderAtual'] as int?);
           return;
         } on ErroDeRede {
-          continue; // fora do ar: tenta a proxima
+          continue;
         } on ErroApi {
           continue;
         }
       }
-      semResposta = true; // nenhuma das 3 respondeu: mantem a ultima lider conhecida, marcada como antiga
+      semResposta = true;
       notifyListeners();
     } finally {
       tentadasNaUltimaConsulta = tentadas;

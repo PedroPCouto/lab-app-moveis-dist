@@ -17,21 +17,6 @@ import br.com.pucminas.iceibank.exception.ConflitoSincronizacaoException;
 import br.com.pucminas.iceibank.model.Autenticacao;
 import br.com.pucminas.iceibank.model.Conta;
 
-/**
- * Sprint 3, Parte E: aplica operacoes que o app fez offline, so se o estado da agencia nao
- * mudou desde a ultima leitura do app (vetor conhecido == vetor atual). Caso contrario,
- * 409 com o estado real, e quem decide o que fazer e o app/a pessoa usuaria.
- *
- * <p>Alem do exemplo do roteiro:
- * <ul>
- *   <li>transferencias tambem (a comparacao e a mesma; muda so o que se aplica);</li>
- *   <li>idempotencia por {@code idOperacao}: se a resposta de uma sincronizacao se perde
- *   (a rede caiu de novo no meio), o app reenvia; sem isso, o reenvio daria 409 - o vetor
- *   ja andou por causa da propria operacao - e a pessoa veria "conflito" para uma operacao
- *   que na verdade ja foi aplicada. Com o id, o reenvio devolve a resposta original.</li>
- * </ul>
- * O registro de ids vive em memoria, como as contas: reiniciar a agencia apaga os dois.
- */
 @Service
 public class SincronizacaoService {
     private static final Logger log = LoggerFactory.getLogger(SincronizacaoService.class);
@@ -61,7 +46,6 @@ public class SincronizacaoService {
         String chave = req.idOperacao() == null || req.idOperacao().isBlank()
                 ? null : auth.sujeito() + ":" + req.idOperacao();
 
-        // A trava da conta serializa duas sincronizacoes da mesma operacao chegando juntas.
         synchronized (conta) {
             SincronizacaoResponse anterior = chave == null ? null : aplicadas.get(chave);
             if (anterior != null) {

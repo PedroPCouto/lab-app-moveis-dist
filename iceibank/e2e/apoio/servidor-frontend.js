@@ -1,5 +1,3 @@
-// Servidor estatico minimo para o frontend (substitui o "python -m http.server" do
-// scripts/servir-frontend.sh, para nao depender de Python).
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

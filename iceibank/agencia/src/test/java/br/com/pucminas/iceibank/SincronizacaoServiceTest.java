@@ -30,7 +30,6 @@ import br.com.pucminas.iceibank.service.SincronizacaoService;
 import br.com.pucminas.iceibank.service.TransferenciaService;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Parte E: o caminho feliz e, principalmente, os casos de conflito. */
 class SincronizacaoServiceTest {
     private static final Autenticacao ANA = new Autenticacao("ana", "Ana", TipoToken.CLIENTE);
 
@@ -63,7 +62,6 @@ class SincronizacaoServiceTest {
 
     @Test
     void consultaDeSaldoTrazOVetorAtual() {
-        // criar conta 0 -> [1,0,0], criar conta 3 -> [2,0,0]
         assertThat(vetorLidoPeloApp(0)).containsExactly(2, 0, 0);
     }
 
@@ -81,7 +79,7 @@ class SincronizacaoServiceTest {
     @Test
     void mudancaNaContaEnquantoOAppEstavaOfflineDa409ComOEstadoReal() {
         int[] conhecido = vetorLidoPeloApp(0);
-        contaService.depositar(0, BigDecimal.valueOf(50), ANA); // "por outro caminho"
+        contaService.depositar(0, BigDecimal.valueOf(50), ANA);
 
         assertThatThrownBy(() -> sincronizacao.sincronizar(0, pendente("op-1", "SAQUE", 30, conhecido), ANA))
                 .isInstanceOfSatisfying(ConflitoSincronizacaoException.class, conflito -> {
@@ -91,7 +89,6 @@ class SincronizacaoServiceTest {
                     assertThat(conflito.getRelacao()).isEqualTo(Relacao.ANTES);
                     assertThat(conflito.getContaAtual().saldo()).isEqualByComparingTo("150.00");
                 });
-        // nada foi aplicado as cegas
         assertThat(contaService.buscar(0).getSaldo()).isEqualByComparingTo("150.00");
     }
 
@@ -115,7 +112,7 @@ class SincronizacaoServiceTest {
     @Test
     void eventoEmOutraContaDaMesmaAgenciaTambemEhConflitoSimplificacaoDoRoteiro() {
         int[] conhecido = vetorLidoPeloApp(0);
-        contaService.depositar(3, BigDecimal.ONE, ANA); // outra conta, mesma agencia
+        contaService.depositar(3, BigDecimal.ONE, ANA);
 
         assertThatThrownBy(() -> sincronizacao.sincronizar(0, pendente("op-1", "DEPOSITO", 5, conhecido), ANA))
                 .isInstanceOf(ConflitoSincronizacaoException.class);
@@ -123,7 +120,6 @@ class SincronizacaoServiceTest {
 
     @Test
     void vetorDoAppAFrenteDaAgenciaTambemEhConflito() {
-        // ex.: a agencia reiniciou sem log; o app conhece um vetor que ela "esqueceu"
         assertThatThrownBy(() -> sincronizacao.sincronizar(0, pendente("op-1", "DEPOSITO", 5, new int[] {9, 0, 0}), ANA))
                 .isInstanceOfSatisfying(ConflitoSincronizacaoException.class,
                         conflito -> assertThat(conflito.getRelacao()).isEqualTo(Relacao.DEPOIS));
@@ -134,7 +130,6 @@ class SincronizacaoServiceTest {
         int[] conhecido = vetorLidoPeloApp(0);
         sincronizacao.sincronizar(0, pendente("op-1", "DEPOSITO", 40, conhecido), ANA);
 
-        // a resposta se perdeu e o app reenvia exatamente a mesma operacao
         SincronizacaoResponse r = sincronizacao.sincronizar(0, pendente("op-1", "DEPOSITO", 40, conhecido), ANA);
 
         assertThat(r.duplicada()).isTrue();

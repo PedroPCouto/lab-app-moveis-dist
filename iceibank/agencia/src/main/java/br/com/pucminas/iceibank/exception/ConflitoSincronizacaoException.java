@@ -5,11 +5,6 @@ import org.springframework.http.HttpStatus;
 import br.com.pucminas.iceibank.dto.ContaComVetor;
 import br.com.pucminas.iceibank.service.RelogioVetorial.Relacao;
 
-/**
- * 409 da sincronizacao offline-first (secao 9.3): o vetor da agencia andou desde a ultima
- * leitura do app. Carrega o que o app precisa para decidir o que fazer: o vetor que ele
- * conhecia, o vetor atual e o estado real da conta.
- */
 public class ConflitoSincronizacaoException extends ApiException {
     private final int[] vetorConhecido;
     private final int[] vetorAtual;

@@ -1,6 +1,3 @@
-// Servidor estatico minimo, parametrizavel: serve o frontend web (Sprint 1/2, porta 5500)
-// ou o build web do app Flutter (Sprint 3, porta 5600), sem depender de Python.
-//   node apoio/servidor-estatico.js <pasta> <porta>
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

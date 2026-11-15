@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../banco.dart';
 import '../modelos.dart';
 
-/// Faixa no topo da tela: sem rede, ou sincronizando a fila.
 class FaixaConexao extends StatelessWidget {
   final Banco banco;
 
@@ -59,7 +58,6 @@ class FaixaConexao extends StatelessWidget {
   );
 }
 
-/// Operacoes que a agencia recusou: ficam na tela ate a pessoa decidir.
 class CartaoRecusadas extends StatelessWidget {
   final Banco banco;
 
@@ -146,7 +144,6 @@ class ItemRecusada extends StatelessWidget {
   }
 }
 
-/// Fila de operacoes feitas offline, ainda nao enviadas.
 class ListaPendentes extends StatelessWidget {
   final Banco banco;
 
@@ -183,8 +180,6 @@ class ListaPendentes extends StatelessWidget {
   }
 }
 
-/// Dialogo aberto sozinho quando a agencia recusa uma sincronizacao: o conflito nunca e
-/// silencioso.
 Future<void> mostrarRecusas(BuildContext context, Banco banco, List<OperacaoPendente> recusadas) {
   return showDialog<void>(
     context: context,

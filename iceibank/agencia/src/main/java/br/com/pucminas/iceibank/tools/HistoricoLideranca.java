@@ -16,20 +16,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 import br.com.pucminas.iceibank.model.Evento;
 
-/**
- * Sprint 3, Parte C: versao em Java do {@code historico-lideranca.js} do roteiro (mesma
- * decisao do Sprint 2, em que o {@code mesclar-logs.js} virou o {@link MesclarLogs}).
- * Le os {@code eventos-agencia-*.jsonl}, filtra os eventos do Bully, ordena pela hora de
- * parede e reconstroi a linha do tempo de liderancas: lider inicial -> queda -> nova lider.
- *
- * <p>Alem do que o script do roteiro imprime, separa duas contagens que respondem a
- * Pergunta 1 da Parte C: quantas vezes alguem DECLAROU {@code TORNOU_LIDER} (inclui a mesma
- * agencia se reafirmando a cada eleicao recebida) e quantas vezes a lideranca de fato
- * MUDOU DE MAOS (lider diferente da anterior).
- *
- * <p>Uso: {@code ./mvnw -q exec:java@historico-lideranca} (le {@code data/}) ou com a pasta
- * como argumento.
- */
 public final class HistoricoLideranca {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
@@ -119,7 +105,6 @@ public final class HistoricoLideranca {
                             eventos.add(evento);
                         }
                     } catch (RuntimeException formatoAntigo) {
-                        // linha de log de um sprint anterior: nao tem evento de eleicao
                     }
                 }
             }

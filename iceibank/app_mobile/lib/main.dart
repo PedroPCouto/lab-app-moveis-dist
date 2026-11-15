@@ -14,8 +14,6 @@ import 'src/lideranca.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
-    // No navegador, liga a arvore de acessibilidade: leitores de tela (e os testes
-    // Playwright das evidencias) enxergam campos e botoes pelos rotulos.
     SemanticsBinding.instance.ensureSemantics();
   }
 
@@ -26,7 +24,6 @@ Future<void> main() async {
   await conectividade.iniciar();
   final banco = Banco(api, armazenamento, conectividade);
   final lideranca = Lideranca(api, armazenamento);
-  // rede de volta: o painel da lider tambem nao espera o proximo ciclo de 3 s
   conectividade.aoReconectar(lideranca.consultar);
 
   final saude = SaudeAgencias(api);

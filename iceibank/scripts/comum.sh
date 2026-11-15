@@ -6,7 +6,6 @@ AGENCIA_DIR="$RAIZ/agencia"
 JAR="$AGENCIA_DIR/target/iceibank-0.0.1-SNAPSHOT.jar"
 PID_DIR="$AGENCIA_DIR/data/.pids"
 
-# Sprint 3: sem RABBITMQ_URL no terminal, usa a do .env.local (fora do Git).
 if [ -z "${RABBITMQ_URL:-}" ] && [ -f "$RAIZ/.env.local" ]; then
   RABBITMQ_URL="$(grep -m1 '^RABBITMQ_URL=' "$RAIZ/.env.local" | cut -d= -f2- | tr -d '\r')"
   export RABBITMQ_URL
@@ -66,8 +65,6 @@ status_resumido() {
     || echo "  agencia $1 fora do ar"
 }
 
-# Linhas "[Vetor ...]" que a agencia imprimiu no console (data/agencia-N.out), sem o
-# prefixo do logger: e o "log das agencias" que as evidencias do Sprint 2 pedem.
 log_da_agencia() {
   local id="$1" linhas="${2:-3}"
   grep -a '\[Vetor' "$AGENCIA_DIR/data/agencia-$id.out" 2>/dev/null | tail -"$linhas" \

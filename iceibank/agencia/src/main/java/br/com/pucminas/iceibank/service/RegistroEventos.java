@@ -103,7 +103,6 @@ public class RegistroEventos {
         try {
             return mapper.readValue(linha, Evento.class).timestampVetorial();
         } catch (RuntimeException formatoAntigo) {
-            // log do Sprint 1 (timestampLamport, sem vetor): nao ha o que restaurar
             return null;
         }
     }

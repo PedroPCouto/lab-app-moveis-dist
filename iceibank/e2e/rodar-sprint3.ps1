@@ -1,13 +1,5 @@
-# Roda os testes gravados do Sprint 3 (app Flutter + agencias reais).
-#   .\e2e\rodar-sprint3.ps1                         usa JAVA_HOME ou %LOCALAPPDATA%\AndroidDev\jdk-25*
-#   .\e2e\rodar-sprint3.ps1 -JavaHome C:\jdk-25     informa o JDK 25
-#   .\e2e\rodar-sprint3.ps1 -Compilar               recompila o build web do app antes
-# Pre-requisitos: jar em agencia\target e build web em app_mobile\build\web
-# (flutter build web --release --no-web-resources-cdn). Sem RABBITMQ_URL, as agencias sobem
-# sem broker (a transferencia entre agencias responde 503 - o resto funciona).
 param([string]$JavaHome = $env:JAVA_HOME, [switch]$Compilar)
 
-# Sem RABBITMQ_URL no terminal nem na variavel de usuario: le o .env.local do projeto (fora do Git).
 function UrlDoEnvLocal {
   $arquivo = Join-Path (Split-Path $PSScriptRoot -Parent) '.env.local'
   if (-not (Test-Path $arquivo)) { return $null }

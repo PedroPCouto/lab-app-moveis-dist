@@ -1,5 +1,3 @@
-// Sobe e derruba as agencias direto pelo Node (java -jar), o equivalente aos
-// scripts/subir-agencias.sh e parar-agencias.sh, sem depender de jq/curl/Git Bash.
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -37,10 +35,6 @@ async function esperar(condicao, descricao, limiteMs = 90_000) {
   throw new Error(`Tempo esgotado esperando: ${descricao}`);
 }
 
-// exigirBroker=false (Sprint 3): sem RABBITMQ_URL as agencias sobem apontando para
-// amqp://localhost sem broker - Bully, contas e sincronizacao funcionam; so a transferencia
-// entre agencias responde 503.
-// Le RABBITMQ_URL do iceibank/.env.local (fora do Git) quando nao vier do ambiente.
 function urlDoEnvLocal() {
   const arquivo = path.join(RAIZ, '.env.local');
   if (!fs.existsSync(arquivo)) return null;
@@ -69,7 +63,6 @@ async function garantirTodasFora() {
   }
 }
 
-// Equivale ao --limpar-logs, mas guarda uma copia dos logs anteriores em data/anteriores-<data>.
 function limparLogs() {
   fs.mkdirSync(DADOS, { recursive: true });
   const antigos = fs.readdirSync(DADOS).filter((f) => f.endsWith('.jsonl') || f.endsWith('.out'));
@@ -95,7 +88,6 @@ async function subir(id) {
   await esperar(() => noAr(id), `agencia ${id} responder em ${url(id)} (veja agencia/data/agencia-${id}.out)`);
 }
 
-// Encerramento abrupto do processo: o mesmo que fechar o terminal da agencia.
 async function derrubar(id) {
   const filho = processos[id];
   if (!filho) throw new Error(`A agencia ${id} nao foi iniciada por estes testes.`);

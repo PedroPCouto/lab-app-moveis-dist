@@ -19,8 +19,6 @@ class IceibankApp extends StatelessWidget {
       title: 'ICEIBank',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F4E8C)), useMaterial3: true),
-      // Sem sessao -> login; com sessao -> tela inicial. Um 401 em qualquer ponto chama
-      // banco.sair(), e esta troca acontece sozinha.
       home: ListenableBuilder(
         listenable: banco,
         builder: (context, _) =>

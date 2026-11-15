@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-Converte a saida de texto de um comando em um PNG com cara de terminal.
-
-Serve para arquivar as evidencias da secao 4.2 sem depender de recortar a janela
-do terminal na mao. A saida e a saida real do comando - inclusive a linha com a
-data/hora da execucao, que o proprio demo.sh imprime no inicio.
-
-Uso:
-    python3 scripts/gerar-prints.py entrada.txt saida.png ["Titulo da janela"]
-"""
 import sys
 from PIL import Image, ImageDraw, ImageFont
 

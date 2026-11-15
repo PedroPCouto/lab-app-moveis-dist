@@ -4,11 +4,6 @@ import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import 'modelos.dart';
 
-/// Armazenamento local do app (Parte F), com Hive (hive_ce). No Android grava em arquivos
-/// no diretorio do app; no navegador, em IndexedDB - o mesmo codigo nos dois.
-///
-/// Cada registro e guardado como JSON (String): dispensa gerar TypeAdapters e deixa o
-/// formato legivel se for preciso inspecionar.
 class Armazenamento {
   static const _caixaSessao = 'sessao';
   static const _caixaContas = 'contas';
@@ -27,7 +22,6 @@ class Armazenamento {
     return _abrirCaixas();
   }
 
-  /// Para os testes: Hive numa pasta qualquer, sem path_provider.
   static Future<Armazenamento> abrirEm(String pasta) async {
     Hive.init(pasta);
     return _abrirCaixas();
@@ -44,8 +38,6 @@ class Armazenamento {
 
   Map<String, dynamic> _ler(String json) => jsonDecode(json) as Map<String, dynamic>;
 
-  // ---- sessao (JWT) ----
-
   Sessao? lerSessao() {
     final json = _sessao.get('atual');
     return json == null ? null : Sessao.doArmazenamento(_ler(json));
@@ -58,8 +50,6 @@ class Armazenamento {
   String? lerHost() => _sessao.get('host');
 
   Future<void> salvarHost(String host) => _sessao.put('host', host);
-
-  // ---- contas: ultimo saldo confirmado + vetor, por dono ----
 
   String _chaveConta(String dono, int id) => '$dono:$id';
 
@@ -79,8 +69,6 @@ class Armazenamento {
   Future<void> salvarConta(Conta conta) =>
       _contas.put(_chaveConta(conta.dono, conta.id), jsonEncode(conta.paraArmazenamento()));
 
-  // ---- fila de operacoes pendentes ----
-
   List<OperacaoPendente> pendentes(String dono) =>
       _pendentes.values.map((j) => OperacaoPendente.doArmazenamento(_ler(j))).where((p) => p.dono == dono).toList()
         ..sort((a, b) => a.ordem.compareTo(b.ordem));
@@ -94,8 +82,6 @@ class Armazenamento {
     _sessao.put('ordem', '${atual + 1}');
     return atual + 1;
   }
-
-  // ---- historico de liderancas observado pelo app (funcionalidade adicional) ----
 
   List<TrocaDeLider> trocasDeLider() {
     final json = _lideranca.get('trocas');

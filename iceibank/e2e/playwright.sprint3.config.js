@@ -1,7 +1,5 @@
 const { defineConfig } = require('@playwright/test');
 
-// Sprint 3: o app Flutter (build web em app_mobile/build/web) num Chromium com viewport de
-// celular. Rodar com:  .\e2e\rodar-sprint3.ps1
 module.exports = defineConfig({
   testDir: '.',
   testMatch: 'sprint3.spec.js',

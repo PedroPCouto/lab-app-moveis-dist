@@ -19,11 +19,6 @@ import br.com.pucminas.iceibank.dto.LiderResponse;
 import br.com.pucminas.iceibank.dto.MensagemCoordenador;
 import br.com.pucminas.iceibank.dto.MensagemEleicao;
 
-/**
- * Implementacao real do {@link ClienteBully}: {@code java.net.http.HttpClient} (nativo do
- * Java, secao 11 do roteiro) com timeout tanto na conexao quanto na resposta inteira.
- * Equivale ao {@code axios.post(..., { timeout: TIMEOUT_MS })} do exemplo em Node.
- */
 @Component
 public class ClienteBullyHttp implements ClienteBully {
     private static final Logger log = LoggerFactory.getLogger(ClienteBullyHttp.class);
@@ -82,7 +77,6 @@ public class ClienteBullyHttp implements ClienteBully {
             HttpResponse<Void> resposta = http.send(requisicao, HttpResponse.BodyHandlers.discarding());
             return resposta.statusCode() / 100 == 2;
         } catch (IOException erro) {
-            // agencia fora do ar ou lenta demais - para o Bully, as duas coisas sao "nao respondeu"
             log.debug("POST {} falhou: {}", url, erro.toString());
             return false;
         } catch (InterruptedException interrompido) {

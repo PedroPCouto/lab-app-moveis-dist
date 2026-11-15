@@ -24,8 +24,6 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtFilter extends OncePerRequestFilter {
     private static final String PREFIXO = "Bearer ";
 
-    // Sprint 3: as rotas do Bully sao chamadas por outras agencias (e pelo app, para o painel
-    // da lider), nao por pessoas usuarias - ficam publicas, como no roteiro.
     private static final List<String> ROTAS_PUBLICAS = List.of("/auth/login", "/status", "/error",
             "/bully/eleicao", "/bully/coordenador", "/bully/lider");
 
@@ -69,8 +67,6 @@ public class JwtFilter extends OncePerRequestFilter {
         return cabecalho.substring(PREFIXO.length()).trim();
     }
 
-    // Sprint 2: a rota interna /contas/{id}/creditar-remoto deixou de existir (o credito
-    // remoto chega pelo RabbitMQ), entao toda rota protegida e de cliente.
     private void verificarTipoPermitido(Autenticacao autenticacao) {
         if (!autenticacao.ehCliente()) {
             throw ApiException.proibido("Somente tokens de cliente podem operar contas.");

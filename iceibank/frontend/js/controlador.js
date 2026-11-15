@@ -181,7 +181,6 @@
             ? resultado.reprocessadas + ' mensagem(ns) morta(s) devolvida(s) para a fila da agencia '
               + Modelo.estado.idAgencia + '. O credito e aplicado assim que for consumido.'
             : 'Nenhuma mensagem morta na agencia ' + Modelo.estado.idAgencia + '.');
-        // o consumo e assincrono: espera um instante antes de reler saldos e filas
         setTimeout(atualizarTudo, 1000);
       })
       .catch(tratarErro);

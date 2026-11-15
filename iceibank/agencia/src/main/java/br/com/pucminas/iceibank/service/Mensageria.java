@@ -35,12 +35,6 @@ public class Mensageria {
         this.mapper = mapper;
     }
 
-    /**
-     * Publica na exchange e so retorna depois que o broker confirmar (publisher confirm)
-     * que aceitou a mensagem - para fila duravel e mensagem persistente, isso significa
-     * gravada em disco. Sem a confirmacao, um "200 OK" na transferencia nao garantiria
-     * nem que a mensagem chegou ao RabbitMQ. Qualquer falha sobe como AmqpException.
-     */
     public void publicar(String routingKey, Object conteudo, String idMensagem) {
         Message mensagem = MessageBuilder.withBody(mapper.writeValueAsBytes(conteudo))
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON)
@@ -55,10 +49,6 @@ public class Mensageria {
         });
     }
 
-    /**
-     * Mensagens prontas para entrega em cada fila, segundo o broker. Com a agencia de
-     * destino fora do ar, e aqui que se ve a mensagem esperando por ela.
-     */
     public Map<String, Long> mensagensPorFila() {
         Map<String, Long> filas = new LinkedHashMap<>();
         for (int id = 0; id < AgenciaConfig.NUMERO_AGENCIAS; id++) {
@@ -70,15 +60,6 @@ public class Mensageria {
         return filas;
     }
 
-    /**
-     * Funcionalidade adicional: devolve as mensagens mortas desta agencia para a exchange
-     * principal, para que o consumidor tente aplicar o credito de novo (por exemplo, depois
-     * que a conta foi recriada). Cada mensagem so sai da fila de mortas (ack) depois que o
-     * broker confirmou a republicacao; se algo falhar no meio, ela continua la.
-     *
-     * <p>Move no maximo o que havia na fila no inicio: se a conta ainda nao existir, a
-     * mensagem volta a morrer e espera o proximo reprocessamento, sem loop.
-     */
     public int reprocessarMortas(int idAgencia) {
         String filaMortas = MensageriaConfig.nomeFilaMortas(idAgencia);
         String routingKey = MensageriaConfig.routingKeyCredito(idAgencia);

@@ -31,7 +31,6 @@ class _TelaInicioState extends State<TelaInicio> {
   void initState() {
     super.initState();
     _assinaturas.add(banco.avisos.listen(_mensagem));
-    // Parte F: recusa na sincronizacao (409) abre um dialogo - nunca fica silenciosa.
     _assinaturas.add(
       banco.recusas.listen((ops) {
         if (mounted) mostrarRecusas(context, banco, ops);
@@ -67,8 +66,6 @@ class _TelaInicioState extends State<TelaInicio> {
       );
   }
 
-  /// Erros da API aparecem na tela com a mensagem que a agencia devolveu (saldo
-  /// insuficiente, conta nao encontrada...). 401 ja levou de volta ao login.
   Future<void> _executar(Future<String> Function() operacao) async {
     try {
       _mensagem(await operacao());
@@ -141,7 +138,6 @@ class _TelaInicioState extends State<TelaInicio> {
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
                     children: [
                       CartaoRecusadas(banco: banco),
-                      // a fila vem antes de tudo: e o que ainda nao aconteceu de verdade
                       ListaPendentes(banco: banco),
                       PainelLider(lideranca: widget.lideranca),
                       const SizedBox(height: 8),
@@ -165,7 +161,6 @@ class _TelaInicioState extends State<TelaInicio> {
                           saldoProvisorio: banco.saldoProvisorio(conta),
                           aoOperar: (tipo) => _operar(tipo, conta),
                         ),
-                      // funcionalidade adicional: quem esta no ar + trocas de lider vistas pelo app
                       const SizedBox(height: 8),
                       PainelCluster(saude: widget.saude, lideranca: widget.lideranca),
                     ],
@@ -215,7 +210,6 @@ class CartaoConta extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (pendentes > 0) ...[
-              // UI otimista: o efeito esperado ja aparece, marcado como provisorio
               Semantics(
                 label: 'Saldo provisorio da conta ${conta.id}: ${reais(saldoProvisorio)}',
                 child: Wrap(

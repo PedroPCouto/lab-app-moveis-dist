@@ -1,13 +1,9 @@
-// Monta os prints de evidencia do Sprint 3: captura(s) da tela do app ao lado de um
-// "terminal" com a saida REAL de comandos PowerShell (Get-Date, Invoke-RestMethod...)
-// executados naquele instante - a convencao do roteiro de ter a data/hora visivel.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const PASTA_EVIDENCIAS = path.resolve(__dirname, '..', '..', 'evidencias', 'sprint3');
 
-/** Executa os comandos num PowerShell de verdade e devolve o texto, com "PS> comando" antes de cada um. */
 function powershell(comandos, env = {}) {
   const partes = ['[Console]::OutputEncoding = [System.Text.Encoding]::UTF8', "$ProgressPreference = 'SilentlyContinue'"];
   for (const comando of comandos) {
@@ -24,10 +20,6 @@ function powershell(comandos, env = {}) {
 
 const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/**
- * Gera evidencias/sprint3/<arquivo>.png com os paineis do app lado a lado e o terminal.
- * paineis: [{ rotulo, png: Buffer }]
- */
 async function compor(browser, { arquivo, titulo, paineis, terminal, nota, imagemLarga, subtitulo }) {
   fs.mkdirSync(path.join(PASTA_EVIDENCIAS, 'saidas'), { recursive: true });
   if (terminal) {

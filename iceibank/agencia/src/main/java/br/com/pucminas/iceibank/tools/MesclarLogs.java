@@ -20,12 +20,6 @@ import br.com.pucminas.iceibank.model.Evento;
 import br.com.pucminas.iceibank.service.RelogioVetorial;
 import br.com.pucminas.iceibank.service.RelogioVetorial.Relacao;
 
-/**
- * Parte D: mescla os logs das agencias e, comparando os vetores, aponta quais pares de
- * eventos de agencias diferentes sao comprovadamente concorrentes. Para cada transferencia
- * entre agencias (ligada pelo idTransferencia), confere tambem que envio e recebimento
- * aparecem como causalmente relacionados - e nunca como concorrentes.
- */
 public final class MesclarLogs {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
@@ -91,7 +85,6 @@ public final class MesclarLogs {
         return encontrados;
     }
 
-    // Debito/envio na origem e credito no destino da MESMA transferencia: tem que dar ANTES.
     private static void imprimirTransferencias(List<Evento> eventos) {
         System.out.println();
         System.out.println("=== Transferencias entre agencias: envio x recebimento (devem ser causais) ===");
@@ -150,7 +143,6 @@ public final class MesclarLogs {
         return MAPPER.writeValueAsString(detalhes);
     }
 
-    // So os 8 primeiros caracteres do UUID: o bastante para casar os eventos a olho.
     private static String curto(Object idTransferencia) {
         String texto = String.valueOf(idTransferencia);
         return texto.substring(0, Math.min(8, texto.length()));

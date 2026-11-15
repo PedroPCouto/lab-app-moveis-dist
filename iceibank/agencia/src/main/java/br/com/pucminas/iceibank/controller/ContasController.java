@@ -27,11 +27,6 @@ import br.com.pucminas.iceibank.service.ContaService;
 import br.com.pucminas.iceibank.service.SincronizacaoService;
 import jakarta.validation.Valid;
 
-/**
- * Sprint 3: as leituras e escritas de conta passam a devolver tambem o {@code vetorAtual}
- * (secao 9.3) - e o que o app guarda para operar offline. Os campos antigos continuam
- * iguais, entao o frontend web do Sprint 1 nao percebe a diferenca.
- */
 @RestController
 @RequestMapping("/contas")
 public class ContasController {
@@ -76,7 +71,6 @@ public class ContasController {
         return contaService.comVetor(contaService.sacar(id, requisicao.valor(), auth));
     }
 
-    // Sprint 3, Parte E (secao 9.4): operacao feita offline pelo app; 409 se o vetor mudou.
     @PostMapping("/{id}/sincronizar")
     public SincronizacaoResponse sincronizar(@PathVariable int id, @Valid @RequestBody SincronizacaoRequest requisicao,
                                              @RequestAttribute(Autenticacao.ATRIBUTO) Autenticacao auth) {

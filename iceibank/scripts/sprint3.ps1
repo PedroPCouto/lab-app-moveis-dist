@@ -1,31 +1,3 @@
-<#
-  Demonstracoes do Sprint 3 (Bully, heartbeat, historico e sincronizacao offline-first),
-  em PowerShell puro - a convencao do roteiro (Windows + PowerShell), sem jq/curl/Python.
-
-  Uso (na pasta iceibank/):
-    powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 <parte> [-Saida arquivo] [-Titulo "..."]
-
-  Partes:
-    subir          sobe as 3 agencias ao mesmo tempo (java -jar), sem limpar os logs
-    parar [id]     derruba todas as agencias, ou so a de id informado (Stop-Process: abrupto,
-                   como fechar o terminal da agencia)
-    eleicao        limpa os logs, sobe as 3 juntas e consulta /bully/lider nas 3 (Parte A)
-    escalonada     limpa os logs e sobe 0, 1 e 2 com 4 s de intervalo (tempestade com varias lideres)
-    failover       derruba a lider atual, espera o heartbeat e consulta as que sobraram;
-                   depois religa a derrubada (Parte B)
-    historico      roda o HistoricoLideranca sobre os logs (Parte C)
-    conflito       saldo com vetorAtual, deposito "enquanto o app estava offline",
-                   sincronizacao recusada (409) e reenviada com o vetor novo (Parte E)
-    lider          so consulta /bully/lider nas 3
-
-  -Saida grava a saida em texto (UTF-8) e gera o PNG com scripts\gerar-prints.ps1 ao lado.
-
-  Pre-requisitos: JDK 25 (JAVA_HOME, -JavaHome ou %LOCALAPPDATA%\AndroidDev\jdk-25*) e o jar
-  em agencia\target (cd agencia; .\mvnw package -DskipTests). A RABBITMQ_URL vem do terminal
-  ou da variavel de usuario do Windows; sem ela, as agencias sobem apontando para
-  amqp://localhost (sem broker): Bully, contas e sincronizacao funcionam, e so a
-  transferencia ENTRE agencias responde 503 (o debito e estornado).
-#>
 param(
   [Parameter(Position = 0)][string]$Parte = 'ajuda',
   [Parameter(Position = 1)][int]$Agencia = -1,
@@ -47,7 +19,6 @@ function Url([int]$id) { "http://localhost:$(4000 + $OFFSET + $id)" }
 function Diga([string]$texto = '') {
   Write-Host $texto
   foreach ($l in ($texto -split "`r?`n")) {
-    # Quebra linhas longas (JSON) depois de uma virgula, para o print nao ficar com 2000 px.
     while ($l.Length -gt 130) {
       $corte = $l.LastIndexOf(',', 130)
       if ($corte -lt 40) { break }
@@ -89,7 +60,6 @@ function Esperar([scriptblock]$condicao, [string]$descricao, [int]$segundos = 90
   throw "Tempo esgotado esperando: $descricao"
 }
 
-# Sem RABBITMQ_URL no terminal nem na variavel de usuario: le o .env.local do projeto (fora do Git).
 function UrlDoEnvLocal {
   $arquivo = Join-Path $RAIZ '.env.local'
   if (-not (Test-Path $arquivo)) { return $null }
@@ -121,13 +91,8 @@ function LimparLogs {
 function SubirProcesso([int]$id) {
   if (-not (Test-Path $JAR)) { throw "Jar nao encontrado: $JAR. Rode: cd agencia; .\mvnw package -DskipTests" }
   New-Item -ItemType Directory -Force -Path $DADOS | Out-Null
-  # As variaveis vao pelo ambiente (herdado), nunca pela linha de comando: a RABBITMQ_URL
-  # tem senha e apareceria na lista de processos.
   $env:AGENCIA_ID = "$id"
   $env:RABBITMQ_URL = RabbitUrl
-  # cmd /c faz o redirecionamento para arquivo. Sem -RedirectStandard* o Start-Process usa
-  # ShellExecute, e o java nao herda os handles deste PowerShell - senao quem chamou o
-  # script (um pipe, um "*> arquivo") ficaria esperando ate as agencias serem derrubadas.
   $saida = Join-Path $DADOS "agencia-$id.out"
   $erros = Join-Path $DADOS "agencia-$id.err"
   $linha = "/c `"`"$(Java)`" -jar `"$JAR`" >> `"$saida`" 2>> `"$erros`"`""
@@ -136,7 +101,7 @@ function SubirProcesso([int]$id) {
 
 function Subir([int[]]$ids) {
   foreach ($id in $ids) { if (NoAr $id) { throw "A agencia $id ja esta no ar." } }
-  foreach ($id in $ids) { SubirProcesso $id }        # as 3 partem praticamente juntas
+  foreach ($id in $ids) { SubirProcesso $id }
   foreach ($id in $ids) { Esperar { NoAr $id } "agencia $id responder em $(Url $id)" }
 }
 
@@ -200,8 +165,6 @@ function ParteEleicao {
   LinhasDoConsole @(0, 1, 2) 'TORNOU_LIDER|LIDER_ANUNCIADO|AGUARDANDO_COORDENADOR'
 }
 
-# Como abrir os 3 terminais um depois do outro: cada agencia que sobe ainda nao ve as de id
-# maior, se declara lider e e "atropelada" pela proxima (pergunta 2 da Parte A).
 function ParteEscalonada {
   Diga '=== Parte A (variacao) - subida escalonada: 0, depois 1, depois 2 (4 s de intervalo) ==='
   MostrarData
@@ -269,8 +232,6 @@ function ParteHistorico {
   foreach ($l in $saida) { Diga "$l" }
 }
 
-# Invoke-WebRequest (e nao Invoke-RestMethod) para ter o status HTTP e o corpo cru da resposta,
-# inclusive nos erros: no PowerShell 5.1 o corpo de um 409 so sai lendo o stream da excecao.
 function Requisitar([string]$metodo, [string]$url, $corpo, [string]$token) {
   $cabecalhos = @{}
   if ($token) { $cabecalhos['Authorization'] = "Bearer $token" }
@@ -347,7 +308,11 @@ switch ($Parte) {
   'historico' { ParteHistorico }
   'conflito' { ParteConflito }
   'lider' { MostrarData; 0, 1, 2 | ForEach-Object { ConsultarLider $_ } | Out-Null }
-  default { Get-Help $PSCommandPath -Detailed | Out-String | Write-Host; exit 0 }
+  default {
+    Write-Host 'Uso: powershell -ExecutionPolicy Bypass -File scripts\sprint3.ps1 <parte> [id] [-Saida arquivo.txt] [-Titulo "..."]'
+    Write-Host 'Partes: subir [id] | parar [id] | eleicao | escalonada | failover | historico | conflito | lider'
+    exit 0
+  }
 }
 
 if ($Saida) {

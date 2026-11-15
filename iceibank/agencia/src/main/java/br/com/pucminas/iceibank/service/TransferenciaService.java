@@ -42,12 +42,6 @@ public class TransferenciaService {
         return transferir(idOrigem, idDestino, valor, auth, null);
     }
 
-    /**
-     * Sprint 3, Parte E: com {@code vetorConhecido} diferente de null, e uma transferencia
-     * feita offline pelo app sendo sincronizada. O debito so acontece se o vetor da agencia
-     * ainda for o que o app conhecia (mesma regra do deposito/saque sincronizado); o resto
-     * - credito local ou publicacao no RabbitMQ - e igual a uma transferencia online.
-     */
     public TransferenciaResponse transferir(int idOrigem, int idDestino, BigDecimal valor, Autenticacao auth,
                                             int[] vetorConhecido) {
         if (idOrigem == idDestino) {
@@ -106,9 +100,6 @@ public class TransferenciaService {
                 idTransferencia);
     }
 
-    // Sprint 1 chamava POST /contas/{id}/creditar-remoto na outra agencia. Agora o credito
-    // vira uma mensagem na exchange: a agencia de destino consome quando puder, mesmo que
-    // esteja fora do ar neste momento (a fila e duravel e a mensagem, persistente).
     private TransferenciaResponse publicarCredito(String idTransferencia, int idOrigem, int idDestino,
                                                   BigDecimal valor, int agenciaDestino, Conta contaOrigem) {
         String routingKey = MensageriaConfig.routingKeyCredito(agenciaDestino);
@@ -129,15 +120,11 @@ public class TransferenciaService {
                 "idTransferencia", idTransferencia, "idOrigem", idOrigem, "idDestino", idDestino,
                 "valor", valor, "agenciaDestino", agenciaDestino, "routingKey", routingKey));
 
-        // 200 aqui quer dizer "o broker aceitou a mensagem", nao "o credito ja foi aplicado".
         return new TransferenciaResponse(
                 "Transferencia publicada para a agencia de destino (entrega assincrona).", "ENTRE_AGENCIAS",
                 idOrigem, idDestino, valor, contaOrigem.getSaldo(), agenciaDestino, vetorEnvio, idTransferencia);
     }
 
-    // A mensagem nao saiu da agencia, entao desfazer o debito localmente e seguro: ninguem
-    // mais viu esse dinheiro. (Bem diferente do Sprint 1, em que o credito remoto podia ter
-    // sido aplicado mesmo com erro na resposta HTTP.)
     private void estornar(String idTransferencia, Conta contaOrigem, BigDecimal valor, Exception motivo) {
         synchronized (contaOrigem) {
             int[] ts = relogio.eventoLocal();
@@ -155,11 +142,6 @@ public class TransferenciaService {
         return reprocessadas;
     }
 
-    /**
-     * Aplica um credito vindo de outra agencia pelo RabbitMQ. Devolve {@code false} quando
-     * a conta nao existe aqui - por exemplo, porque a agencia reiniciou e perdeu as contas
-     * em memoria antes de consumir a mensagem (cenario da Parte C).
-     */
     public boolean creditarRemoto(MensagemCredito mensagem) {
         Optional<Conta> encontrada = contaService.procurar(mensagem.idConta());
         if (encontrada.isEmpty()) {
@@ -173,8 +155,6 @@ public class TransferenciaService {
 
         Conta conta = encontrada.get();
         synchronized (conta) {
-            // Sprint 3: o recebimento (que avanca o vetor) fica dentro da trava da conta, junto
-            // com o credito - assim um snapshot (saldo, vetor) da conta nunca ve um sem o outro.
             int[] ts = relogio.aoReceber(mensagem.vetorEnvio());
             conta.creditar(mensagem.valor());
             registro.registrar("TRANSFERENCIA_CREDITO_REMOTO", ts, ContaService.detalhes(
@@ -185,7 +165,6 @@ public class TransferenciaService {
         return true;
     }
 
-    // Lista em vez de int[] nos detalhes: o log de console usa toString(), e int[] sairia "[I@1b67bb0f".
     private static List<Integer> comoLista(int[] vetor) {
         return Arrays.stream(vetor).boxed().toList();
     }

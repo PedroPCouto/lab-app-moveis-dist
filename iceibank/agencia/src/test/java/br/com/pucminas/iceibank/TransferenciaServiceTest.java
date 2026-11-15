@@ -65,7 +65,6 @@ class TransferenciaServiceTest {
         ArgumentCaptor<MensagemCredito> mensagem = ArgumentCaptor.forClass(MensagemCredito.class);
         verify(mensageria).publicar(eq("agencia.1.creditar"), mensagem.capture(), eq(resposta.idTransferencia()));
 
-        // criar conta [1,0,0] -> debito [2,0,0] -> envio [3,0,0]
         assertThat(mensagem.getValue().vetorEnvio()).containsExactly(3, 0, 0);
         assertThat(mensagem.getValue().idConta()).isEqualTo(1);
         assertThat(resposta.escopo()).isEqualTo("ENTRE_AGENCIAS");
@@ -107,7 +106,6 @@ class TransferenciaServiceTest {
         assertThat(contaService.buscar(0).getSaldo()).isEqualByComparingTo("115.00");
         Evento credito = registro.eventos().getLast();
         assertThat(credito.tipo()).isEqualTo("TRANSFERENCIA_CREDITO_REMOTO");
-        // vetor local [1,0,0] (criou a conta) + recebido [0,4,2] -> max = [1,4,2] -> +1 na posicao 0
         assertThat(credito.timestampVetorial()).containsExactly(2, 4, 2);
     }
 

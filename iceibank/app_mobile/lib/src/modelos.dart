@@ -1,6 +1,5 @@
 import 'config.dart';
 
-/// Dinheiro sempre em centavos (int) dentro do app: nada de `double` para saldo.
 int centavosDe(num valor) => (valor * 100).round();
 
 String reais(int centavos) {
@@ -14,7 +13,6 @@ String reais(int centavos) {
   return '${negativo ? '-' : ''}R\$ ${grupos.join('.')},${(abs % 100).toString().padLeft(2, '0')}';
 }
 
-/// Aceita "30", "30,5", "30,50", "1.234,56" e "30.50". Devolve null se nao for valor valido.
 int? centavosDoTexto(String texto) {
   var t = texto.trim().replaceAll('R\$', '').replaceAll(' ', '');
   if (t.isEmpty) return null;
@@ -36,8 +34,6 @@ String vetorTexto(List<int> vetor) => '[${vetor.join(',')}]';
 
 List<int> _vetor(dynamic bruto) => (bruto as List).map((e) => (e as num).toInt()).toList();
 
-/// Conta como o app conhece: o ultimo saldo CONFIRMADO pela agencia e o vetor da agencia
-/// naquele mesmo instante (Parte E). E isso que vai para o armazenamento local.
 class Conta {
   final int id;
   final String nomeAluno;
@@ -100,23 +96,11 @@ extension TipoOperacaoApi on TipoOperacao {
     TipoOperacao.transferencia => 'Transferencia',
   };
 
-  /// Efeito no saldo da conta de origem.
   int sinal() => this == TipoOperacao.deposito ? 1 : -1;
 }
 
-enum SituacaoPendente {
-  /// Na fila, esperando conexao com a agencia.
-  pendente,
+enum SituacaoPendente { pendente, conflito, rejeitada }
 
-  /// A agencia recusou com 409: o estado da conta mudou enquanto o app estava offline.
-  /// Nao e reenviada sozinha - espera a decisao da pessoa usuaria.
-  conflito,
-
-  /// A agencia recusou por outro motivo (ex.: saldo insuficiente no saldo real).
-  rejeitada,
-}
-
-/// Operacao feita sem conexao com a agencia responsavel (Parte F).
 class OperacaoPendente {
   final String idOperacao;
   final String dono;
@@ -125,17 +109,14 @@ class OperacaoPendente {
   final int? idDestino;
   final int valorCentavos;
 
-  /// O vetorAtual que o app tinha da conta quando a operacao foi feita.
   final List<int> vetorConhecido;
 
-  /// Saldo confirmado que a pessoa via quando fez a operacao (para explicar um conflito).
   final int saldoVistoCentavos;
   final DateTime criadaEm;
   final int ordem;
   final SituacaoPendente situacao;
   final String? mensagem;
 
-  /// Preenchidos quando a agencia devolve 409.
   final int? saldoRealCentavos;
   final List<int>? vetorAtualAgencia;
 
@@ -156,7 +137,6 @@ class OperacaoPendente {
     this.vetorAtualAgencia,
   });
 
-  /// Entra no saldo provisorio enquanto ainda pode ser aplicada automaticamente.
   bool get contaNoSaldoProvisorio => situacao == SituacaoPendente.pendente;
 
   int get efeitoCentavos => tipo.sinal() * valorCentavos;
@@ -266,7 +246,6 @@ class Sessao {
   );
 }
 
-/// Uma troca de lideranca observada pelo app (funcionalidade adicional).
 class TrocaDeLider {
   final int? de;
   final int para;

@@ -30,11 +30,6 @@ import br.com.pucminas.iceibank.service.RegistroEventos;
 import br.com.pucminas.iceibank.service.RelogioVetorial;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * A logica de decisao do Bully, sem rede: as 3 agencias conversam por uma "rede" em
- * memoria onde uma agencia pode ser derrubada (passa a nao responder, como um processo
- * encerrado) e religada.
- */
 class BullyServiceTest {
     @TempDir
     Path pasta;
@@ -88,7 +83,6 @@ class BullyServiceTest {
         subir(1);
         subir(2);
 
-        // a "tempestade" da subida: as tres comecam uma eleicao ao mesmo tempo
         agencias.values().forEach(BullyService::aoSubir);
 
         esperar(() -> Integer.valueOf(2).equals(lider(0)) && Integer.valueOf(2).equals(lider(1))
@@ -136,7 +130,6 @@ class BullyServiceTest {
         subir(1);
         subir(2);
 
-        // a 1 nao viu a 2 a tempo (ex.: a 2 ainda subia) e se anunciou para todo mundo
         agencias.get(0).receberCoordenador(1, new int[] {0, 5, 0});
         agencias.get(2).receberCoordenador(1, new int[] {0, 5, 0});
 
@@ -152,7 +145,6 @@ class BullyServiceTest {
         agencias.get(0).iniciarEleicao();
         esperar(() -> Integer.valueOf(1).equals(lider(0)), "a lider ser a 1");
 
-        // ELEICAO_RECEBIDA na agencia 1 tem que ver o envio da 0: posicao 0 maior que zero
         Evento recebida = registros.get(1).eventos().stream()
                 .filter(e -> e.tipo().equals("ELEICAO_RECEBIDA")).findFirst().orElseThrow();
         assertThat(recebida.timestampVetorial()[0]).isPositive();
@@ -206,14 +198,13 @@ class BullyServiceTest {
     void heartbeatEmQuemEALiderNaoConsultaNinguem() throws Exception {
         subir(0);
         agencias.get(0).iniciarEleicao();
-        rede.derrubar(0); // nem ela mesma responderia - e nao deve precisar
+        rede.derrubar(0);
 
         agencias.get(0).verificarLider();
 
         assertThat(lider(0)).isEqualTo(0);
     }
 
-    /** Rede de mentira: entrega a chamada direto ao servico da agencia de destino. */
     static class RedeEmMemoria implements ClienteBully {
         private final Map<Integer, BullyService> ligadas = new ConcurrentHashMap<>();
         private final Set<Integer> derrubadas = ConcurrentHashMap.newKeySet();
