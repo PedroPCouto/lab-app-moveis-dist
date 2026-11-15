@@ -1,6 +1,6 @@
 PS> Get-Date
 
-domingo, 15 de novembro de 2026 16:32:36
+domingo, 15 de novembro de 2026 16:36:35
 PS> Invoke-RestMethod http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize
 
 id  saldo vetorAtual
@@ -10,7 +10,7 @@ id  saldo vetorAtual
 # rede de volta - o app chama POST /contas/30/sincronizar sozinho
 PS> Get-Date
 
-domingo, 15 de novembro de 2026 16:32:37
+domingo, 15 de novembro de 2026 16:36:36
 PS> Invoke-RestMethod http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize
 
 id  saldo vetorAtual

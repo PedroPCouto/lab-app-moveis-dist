@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'agencias.dart';
 import 'banco.dart';
 import 'lideranca.dart';
 import 'telas/tela_inicio.dart';
@@ -8,8 +9,9 @@ import 'telas/tela_login.dart';
 class IceibankApp extends StatelessWidget {
   final Banco banco;
   final Lideranca lideranca;
+  final SaudeAgencias saude;
 
-  const IceibankApp({super.key, required this.banco, required this.lideranca});
+  const IceibankApp({super.key, required this.banco, required this.lideranca, required this.saude});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class IceibankApp extends StatelessWidget {
       home: ListenableBuilder(
         listenable: banco,
         builder: (context, _) =>
-            banco.autenticado ? TelaInicio(banco: banco, lideranca: lideranca) : TelaLogin(banco: banco),
+            banco.autenticado ? TelaInicio(banco: banco, lideranca: lideranca, saude: saude) : TelaLogin(banco: banco),
       ),
     );
   }

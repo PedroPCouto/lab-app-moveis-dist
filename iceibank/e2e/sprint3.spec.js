@@ -205,4 +205,31 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
       terminal: [outroCaminho, '', '# app reconecta -> 409 (vetor mudou) -> nada aplicado', terminalConflito].join('\n'),
     });
   });
+
+  // ---- Funcionalidade adicional: painel do cluster ------------------------------------
+
+  test('X1 - painel do cluster: agencias ativas e historico de trocas de lider', async ({ browser }) => {
+    await agencias.derrubar(1); // uma agencia que NAO e a lider cai
+    await app.esperarNaTela(page, /Agencia 1: fora do ar/, 20_000);
+    await page.mouse.move(200, 600);
+    await page.mouse.wheel(0, 3000); // rola ate o fim da lista, onde fica o painel
+    await app.esperarNaTela(page, /Troca de lider: agencia 1 para agencia 2/);
+    await page.waitForTimeout(800);
+    const tela = await page.screenshot();
+
+    await compor(browser, {
+      arquivo: 'funcionalidade-adicional.png',
+      titulo: 'Funcionalidade adicional - painel do cluster: quem esta no ar + trocas de lideranca vistas pelo app',
+      paineis: [{ rotulo: 'Agencia 1 derrubada; historico 2 -> 1 -> 2 do failover', png: tela }],
+      terminal: powershell([
+        'Get-Date',
+        'Test-NetConnection localhost -Port 4001 -InformationLevel Quiet -WarningAction SilentlyContinue',
+        liderEm(0),
+        `(Invoke-RestMethod http://localhost:4002/status) | Select-Object idAgencia, situacao, @{n='vetor';e={$_.relogioVetorial -join ','}} | Format-Table -AutoSize`,
+      ]),
+    });
+
+    await agencias.subir(1);
+    await app.esperarNaTela(page, /Agencia 1: no ar/, 20_000);
+  });
 });

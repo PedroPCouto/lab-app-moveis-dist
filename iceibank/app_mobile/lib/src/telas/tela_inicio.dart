@@ -2,19 +2,22 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
+import '../agencias.dart';
 import '../api.dart';
 import '../banco.dart';
 import '../lideranca.dart';
 import '../modelos.dart';
 import 'dialogos.dart';
+import 'painel_cluster.dart';
 import 'painel_lider.dart';
 import 'pendentes.dart';
 
 class TelaInicio extends StatefulWidget {
   final Banco banco;
   final Lideranca lideranca;
+  final SaudeAgencias saude;
 
-  const TelaInicio({super.key, required this.banco, required this.lideranca});
+  const TelaInicio({super.key, required this.banco, required this.lideranca, required this.saude});
 
   @override
   State<TelaInicio> createState() => _TelaInicioState();
@@ -35,6 +38,7 @@ class _TelaInicioState extends State<TelaInicio> {
       }),
     );
     banco.iniciar();
+    widget.saude.iniciar();
     widget.lideranca.iniciar(agenciaPreferida: banco.sessao?.agenciaEntrada ?? 0);
   }
 
@@ -43,6 +47,7 @@ class _TelaInicioState extends State<TelaInicio> {
     for (final a in _assinaturas) {
       a.cancel();
     }
+    widget.saude.parar();
     widget.lideranca.parar();
     banco.parar();
     super.dispose();
@@ -160,6 +165,9 @@ class _TelaInicioState extends State<TelaInicio> {
                           saldoProvisorio: banco.saldoProvisorio(conta),
                           aoOperar: (tipo) => _operar(tipo, conta),
                         ),
+                      // funcionalidade adicional: quem esta no ar + trocas de lider vistas pelo app
+                      const SizedBox(height: 8),
+                      PainelCluster(saude: widget.saude, lideranca: widget.lideranca),
                     ],
                   ),
                 ),

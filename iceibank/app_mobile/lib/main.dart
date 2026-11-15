@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'src/agencias.dart';
 import 'src/api.dart';
 import 'src/app.dart';
 import 'src/armazenamento.dart';
@@ -28,5 +29,7 @@ Future<void> main() async {
   // rede de volta: o painel da lider tambem nao espera o proximo ciclo de 3 s
   conectividade.aoReconectar(lideranca.consultar);
 
-  runApp(IceibankApp(banco: banco, lideranca: lideranca));
+  final saude = SaudeAgencias(api);
+
+  runApp(IceibankApp(banco: banco, lideranca: lideranca, saude: saude));
 }
