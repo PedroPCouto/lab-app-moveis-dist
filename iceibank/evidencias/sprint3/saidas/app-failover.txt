@@ -1,29 +1,29 @@
 PS> Get-Date
 
-domingo, 15 de novembro de 2026 16:36:21
+domingo, 15 de novembro de 2026 16:39:19
 PS> Invoke-RestMethod http://localhost:4000/bully/lider | Format-Table -AutoSize
 
-idAgencia liderAtual eleicaoEmAndamento horaParede                 
---------- ---------- ------------------ ----------                 
-        0          2              False 2026-11-15T19:36:21.237322Z
+idAgencia liderAtual eleicaoEmAndamento horaParede                    
+--------- ---------- ------------------ ----------                    
+        0          2              False 2026-11-15T19:39:19.695731400Z
 
 # agencia 2 derrubada (processo encerrado)
 PS> Get-Date
 
-domingo, 15 de novembro de 2026 16:36:21
+domingo, 15 de novembro de 2026 16:39:20
 PS> Test-NetConnection localhost -Port 4002 -InformationLevel Quiet -WarningAction SilentlyContinue
 False
 
 PS> Get-Date
 
-domingo, 15 de novembro de 2026 16:36:26
+domingo, 15 de novembro de 2026 16:39:25
 PS> Invoke-RestMethod http://localhost:4000/bully/lider | Format-Table -AutoSize
 
 idAgencia liderAtual eleicaoEmAndamento horaParede                    
 --------- ---------- ------------------ ----------                    
-        0          1              False 2026-11-15T19:36:26.697519600Z
+        0          1              False 2026-11-15T19:39:25.184782900Z
 PS> Invoke-RestMethod http://localhost:4001/bully/lider | Format-Table -AutoSize
 
 idAgencia liderAtual eleicaoEmAndamento horaParede                    
 --------- ---------- ------------------ ----------                    
-        1          1              False 2026-11-15T19:36:26.748113500Z
+        1          1              False 2026-11-15T19:39:25.234009300Z

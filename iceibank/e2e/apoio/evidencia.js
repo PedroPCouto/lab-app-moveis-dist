@@ -12,7 +12,7 @@ function powershell(comandos, env = {}) {
   const partes = ['[Console]::OutputEncoding = [System.Text.Encoding]::UTF8', "$ProgressPreference = 'SilentlyContinue'"];
   for (const comando of comandos) {
     partes.push(`Write-Output ('PS> ' + '${comando.replace(/'/g, "''")}')`);
-    partes.push(`try { (${comando}) | Out-String -Width 160 | ForEach-Object { $_.TrimEnd() } | Write-Output } catch { Write-Output ('ERRO: ' + $_.Exception.Message) }`);
+    partes.push(`try { & { ${comando} } | Out-String -Width 160 | ForEach-Object { $_.TrimEnd() } | Write-Output } catch { Write-Output ('ERRO: ' + $_.Exception.Message) }`);
   }
   const saida = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', partes.join('; ')], {
     encoding: 'utf8',
@@ -28,7 +28,7 @@ const escapar = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>
  * Gera evidencias/sprint3/<arquivo>.png com os paineis do app lado a lado e o terminal.
  * paineis: [{ rotulo, png: Buffer }]
  */
-async function compor(browser, { arquivo, titulo, paineis, terminal, nota }) {
+async function compor(browser, { arquivo, titulo, paineis, terminal, nota, imagemLarga, subtitulo }) {
   fs.mkdirSync(path.join(PASTA_EVIDENCIAS, 'saidas'), { recursive: true });
   if (terminal) {
     fs.writeFileSync(path.join(PASTA_EVIDENCIAS, 'saidas', arquivo.replace(/\.png$/, '.txt')), terminal + '\n');
@@ -36,7 +36,8 @@ async function compor(browser, { arquivo, titulo, paineis, terminal, nota }) {
   const imagens = paineis
     .map((p) => `<figure><figcaption>${escapar(p.rotulo)}</figcaption>
       <img src="data:image/png;base64,${p.png.toString('base64')}"></figure>`)
-    .join('');
+    .join('') + (imagemLarga ? `<figure><figcaption>${escapar(imagemLarga.rotulo)}</figcaption>
+      <img style="width:760px" src="data:image/png;base64,${imagemLarga.png.toString('base64')}"></figure>` : '');
   const linhas = (terminal || '')
     .split('\n')
     .map((l) => {
@@ -59,7 +60,7 @@ async function compor(browser, { arquivo, titulo, paineis, terminal, nota }) {
     .cmd { color: #56b6c2; } .erro { color: #f87171; }
     .nota { margin: 0 16px 16px; font-size: 12px; color: #444; }
   </style></head><body>
-    <header>${escapar(titulo)}<small>ICEIBank - Sprint 3 - app Flutter (build web, Chromium com viewport de celular 412x915)</small></header>
+    <header>${escapar(titulo)}<small>${escapar(subtitulo || "ICEIBank - Sprint 3 - app Flutter (build web, Chromium com viewport de celular 412x915)")}</small></header>
     <main>${imagens}${terminal ? `<div class="terminal"><div class="barra">Windows PowerShell</div><div class="conteudo">${linhas}</div></div>` : ''}</main>
     ${nota ? `<p class="nota">${escapar(nota)}</p>` : ''}
   </body></html>`;

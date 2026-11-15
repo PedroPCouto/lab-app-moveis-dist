@@ -232,4 +232,53 @@ test.describe.serial('Sprint 3 - app Flutter', () => {
     await agencias.subir(1);
     await app.esperarNaTela(page, /Agencia 1: no ar/, 20_000);
   });
+
+  // ---- Regressao: o frontend web do Sprint 1 continua funcionando ---------------------
+
+  test('R1 - regressao: frontend web e JWT continuam funcionando com a API do Sprint 3', async ({ browser }) => {
+    const { spawn } = require('child_process');
+    const servidor = spawn(process.execPath, [path.join(__dirname, 'apoio', 'servidor-estatico.js'),
+      path.join(__dirname, '..', 'frontend'), '5500'], { stdio: 'ignore' });
+    try {
+      await expect.poll(() => fetch('http://localhost:5500').then((r) => r.ok).catch(() => false)).toBe(true);
+      const web = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      await web.goto('http://localhost:5500');
+      await web.selectOption('#agenciaLogin', '0');
+      await web.fill('#usuario', 'ana');
+      await web.fill('#senha', 'ana123');
+      await web.click('#formularioLogin button[type=submit]');
+      await expect(web.locator('#telaApp')).toBeVisible();
+      await expect(web.locator('#corpoContas')).toContainText('30');
+
+      await web.fill('#transferenciaOrigem', '30');
+      await web.fill('#transferenciaDestino', '33');
+      await web.fill('#transferenciaValor', '5');
+      await web.click('#formularioTransferencia button[type=submit]');
+      await expect(web.locator('#mensagem')).toContainText(/mesma agencia|LOCAL/i);
+      const tela = await web.screenshot({ fullPage: true });
+      await web.close();
+
+      // JWT: sem token -> 401; token valido -> 200 (agora com vetorAtual)
+      const semToken = await app.api('GET', 0, '/contas/30');
+      const comToken = await app.api('GET', 0, '/contas/30', null, tokenAna);
+      expect(semToken.status).toBe(401);
+      expect(comToken.status).toBe(200);
+      expect(comToken.corpo.vetorAtual).toHaveLength(3);
+
+      await compor(browser, {
+        arquivo: 'regressao-frontend-jwt.png',
+        titulo: 'Continuidade - frontend web (Sprint 1) e JWT funcionando sobre a API do Sprint 3',
+        subtitulo: 'ICEIBank - Sprint 3 - frontend web sem alteracoes, servido em localhost:5500',
+        paineis: [],
+        terminal: powershell([
+          'Get-Date',
+          `try { Invoke-RestMethod http://localhost:4000/contas/30 } catch { 'HTTP ' + [int]$_.Exception.Response.StatusCode + ' sem token' }`,
+          `Invoke-RestMethod http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize`,
+        ], { TOKEN_ANA: tokenAna }),
+        imagemLarga: { rotulo: 'Frontend web: login da Ana + transferencia local 30 -> 33', png: tela },
+      });
+    } finally {
+      servidor.kill();
+    }
+  });
 });
