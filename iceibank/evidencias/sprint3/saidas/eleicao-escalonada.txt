@@ -1,0 +1,34 @@
+=== Parte A (variacao) - subida escalonada: 0, depois 1, depois 2 (4 s de intervalo) ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:40:18
+PS> scripts\sprint3.ps1 subir 0
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:40:28
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 0   eleicaoEmAndamento : False
+
+PS> scripts\sprint3.ps1 subir 1
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:40:37
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 1   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 1   eleicaoEmAndamento : False
+
+PS> scripts\sprint3.ps1 subir 2
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:40:46
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4002/bully/lider" -Method Get
+idAgencia : 2   liderAtual : 2   eleicaoEmAndamento : False
+
+=== TORNOU_LIDER nos logs de console das 3 agencias ===
+--- console da agencia 0 (agencia\data\agencia-0.out) ---
+16:40:23.581 : [Vetor [4, 0, 0]] TORNOU_LIDER {idAgencia=0}
+--- console da agencia 1 (agencia\data\agencia-1.out) ---
+16:40:33.009 : [Vetor [0, 3, 0]] TORNOU_LIDER {idAgencia=1}
+--- console da agencia 2 (agencia\data\agencia-2.out) ---
+16:40:42.318 : [Vetor [0, 0, 2]] TORNOU_LIDER {idAgencia=2}

@@ -10,6 +10,7 @@
     parar [id]     derruba todas as agencias, ou so a de id informado (Stop-Process: abrupto,
                    como fechar o terminal da agencia)
     eleicao        limpa os logs, sobe as 3 juntas e consulta /bully/lider nas 3 (Parte A)
+    escalonada     limpa os logs e sobe 0, 1 e 2 com 4 s de intervalo (tempestade com varias lideres)
     failover       derruba a lider atual, espera o heartbeat e consulta as que sobraram;
                    depois religa a derrubada (Parte B)
     historico      roda o HistoricoLideranca sobre os logs (Parte C)
@@ -189,6 +190,24 @@ function ParteEleicao {
   LinhasDoConsole @(0, 1, 2) 'TORNOU_LIDER|LIDER_ANUNCIADO|AGUARDANDO_COORDENADOR'
 }
 
+# Como abrir os 3 terminais um depois do outro: cada agencia que sobe ainda nao ve as de id
+# maior, se declara lider e e "atropelada" pela proxima (pergunta 2 da Parte A).
+function ParteEscalonada {
+  Diga '=== Parte A (variacao) - subida escalonada: 0, depois 1, depois 2 (4 s de intervalo) ==='
+  MostrarData
+  LimparLogs
+  foreach ($id in 0, 1, 2) {
+    Comando "scripts\sprint3.ps1 subir $id"
+    Subir @($id)
+    Start-Sleep -Seconds 4
+    MostrarData
+    0..$id | ForEach-Object { ConsultarLider $_ } | Out-Null
+    Diga ''
+  }
+  Diga '=== TORNOU_LIDER nos logs de console das 3 agencias ==='
+  LinhasDoConsole @(0, 1, 2) 'TORNOU_LIDER'
+}
+
 function ParteFailover {
   Diga '=== Parte B - failover: derrubar a lider e deixar o heartbeat reagir ==='
   MostrarData
@@ -313,6 +332,7 @@ switch ($Parte) {
   'subir-uma' { Subir @($Agencia) }
   'parar' { if ($Agencia -ge 0) { Derrubar $Agencia } else { 0, 1, 2 | ForEach-Object { Derrubar $_ } }; Diga 'Agencias derrubadas.' }
   'eleicao' { ParteEleicao }
+  'escalonada' { ParteEscalonada }
   'failover' { ParteFailover }
   'historico' { ParteHistorico }
   'conflito' { ParteConflito }

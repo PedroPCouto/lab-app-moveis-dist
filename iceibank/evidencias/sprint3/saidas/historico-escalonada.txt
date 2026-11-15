@@ -1,0 +1,25 @@
+=== Parte C - historico de liderancas (HistoricoLideranca sobre agencia\data\*.jsonl) ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:40:55
+PS> cd agencia; .\mvnw -q exec:java@historico-lideranca
+=== Historico de eventos de eleicao ===
+(19:40:23.497) [agencia-0] ELEICAO_INICIADA    [1,0,0]     {"idAgencia":0}
+(19:40:23.581) [agencia-0] TORNOU_LIDER        [4,0,0]     {"idAgencia":0}
+(19:40:32.926) [agencia-1] ELEICAO_INICIADA    [0,1,0]     {"idAgencia":1}
+(19:40:33.008) [agencia-1] TORNOU_LIDER        [0,3,0]     {"idAgencia":1}
+(19:40:33.097) [agencia-0] LIDER_ANUNCIADO     [7,4,0]     {"liderId":1,"agencia":0,"aceito":true}
+(19:40:42.269) [agencia-2] ELEICAO_INICIADA    [0,0,1]     {"idAgencia":2}
+(19:40:42.317) [agencia-2] TORNOU_LIDER        [0,0,2]     {"idAgencia":2}
+(19:40:42.378) [agencia-0] LIDER_ANUNCIADO     [8,4,3]     {"liderId":2,"agencia":0,"aceito":true}
+(19:40:42.601) [agencia-1] LIDER_ANUNCIADO     [0,6,4]     {"liderId":2,"agencia":1,"aceito":true}
+
+=== Linha do tempo de lideres ===
+A partir de 2026-11-15T19:40:23.581831500Z: Agencia 0 e a lider (lider inicial)
+A partir de 2026-11-15T19:40:33.008343300Z: Agencia 1 e a lider (antes: agencia 0)
+A partir de 2026-11-15T19:40:42.317202Z: Agencia 2 e a lider (antes: agencia 1)
+
+=== Resumo ===
+Eventos de eleicao ................................ 9
+Declaracoes TORNOU_LIDER (inclui reafirmacoes) .... 3
+Trocas efetivas de lideranca (lider diferente) .... 3
+Lider ao final dos logs ........................... agencia 2
