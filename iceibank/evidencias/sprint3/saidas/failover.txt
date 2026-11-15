@@ -1,0 +1,49 @@
+=== Parte B - failover: derrubar a lider e deixar o heartbeat reagir ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:04:45
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4002/bully/lider" -Method Get
+idAgencia : 2   liderAtual : 2   eleicaoEmAndamento : False
+
+PS> Stop-Process -Id 26348 -Force    # derruba a agencia 2 (a lider), como fechar o terminal dela
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:04:48
+Ninguem mexe em nada: aguardando 8 s (heartbeat a cada 3 s + timeout de 1 s + eleicao)...
+
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:04:56
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 1   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 1   eleicaoEmAndamento : False
+
+>>> Sem intervencao manual, as agencias 0 e 1 elegeram a agencia 1.
+
+=== Deteccao da queda nos logs de console ===
+--- console da agencia 0 (agencia\data\agencia-0.out) ---
+16:04:35.396 : [Vetor [3, 0, 3]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+16:04:35.448 : [Vetor [6, 2, 9]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+16:04:35.469 : [Vetor [7, 2, 13]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+16:04:35.485 : [Vetor [8, 8, 18]] LIDER_ANUNCIADO {liderId=2, agencia=0, aceito=true}
+16:04:46.898 : [Vetor [9, 16, 19]] LIDER_ANUNCIADO {liderId=1, agencia=0, aceito=true}
+--- console da agencia 1 (agencia\data\agencia-1.out) ---
+16:04:35.438 : [Vetor [2, 4, 4]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+16:04:35.456 : [Vetor [4, 6, 10]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+16:04:35.476 : [Vetor [4, 10, 15]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+16:04:35.492 : [Vetor [4, 11, 19]] LIDER_ANUNCIADO {liderId=2, agencia=1, aceito=true}
+16:04:46.882 : [Vetor [4, 12, 19]] LIDER_NAO_RESPONDEU {liderAtual=2, agencia=1, motivo=sem resposta em 1000 ms}
+16:04:46.889 : [Vetor [4, 15, 19]] TORNOU_LIDER {idAgencia=1}
+
+=== Passo 6: religando a agencia 2 ===
+PS> scripts\sprint3.ps1 subir-uma 2
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:05:08
+PS> Invoke-RestMethod -Uri "http://localhost:4000/bully/lider" -Method Get
+idAgencia : 0   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4001/bully/lider" -Method Get
+idAgencia : 1   liderAtual : 2   eleicaoEmAndamento : False
+PS> Invoke-RestMethod -Uri "http://localhost:4002/bully/lider" -Method Get
+idAgencia : 2   liderAtual : 2   eleicaoEmAndamento : False

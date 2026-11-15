@@ -3,8 +3,10 @@ package br.com.pucminas.iceibank.service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,8 +26,9 @@ import br.com.pucminas.iceibank.dto.MensagemEleicao;
 import jakarta.annotation.PreDestroy;
 
 /**
- * Sprint 3, Parte A: eleicao de lider pelo algoritmo de Bully (Garcia-Molina, 1982).
- * Vence sempre a agencia de MAIOR id entre as que estao respondendo.
+ * Sprint 3, Partes A e B: eleicao de lider pelo algoritmo de Bully (Garcia-Molina, 1982)
+ * e heartbeat para detectar a queda da lider. Vence sempre a agencia de MAIOR id entre as
+ * que estao respondendo.
  *
  * <p>Traducao para Java do {@code bullyService.js} do roteiro, com tres cuidados que o
  * exemplo em Node nao precisava ter (ou deixava passar):
@@ -67,6 +70,10 @@ public class BullyService {
     // Eleicoes disparadas por mensagens recebidas rodam fora da thread do Tomcat (ver acima).
     private final ExecutorService eleicoes = Executors.newSingleThreadExecutor(threadsComNome("bully-eleicao"));
 
+    // Parte B: uma thread so para o heartbeat (o setInterval do exemplo em Node).
+    private final ScheduledExecutorService heartbeat =
+            Executors.newSingleThreadScheduledExecutor(threadsComNome("bully-heartbeat"));
+
     public BullyService(AgenciaConfig config, BullyProperties propriedades, RelogioVetorial relogio,
                         RegistroEventos registro, ClienteBully cliente) {
         this.idAgencia = config.getIdAgencia();
@@ -85,6 +92,7 @@ public class BullyService {
             return;
         }
         eleicoes.submit(this::iniciarEleicao);
+        iniciarHeartbeat(propriedades.intervaloHeartbeat().toMillis());
     }
 
     /**
@@ -164,6 +172,61 @@ public class BullyService {
                 "liderId", liderId, "agencia", idAgencia, "aceito", true));
     }
 
+    /**
+     * Parte B: confere se a lider conhecida continua respondendo. Sem lider conhecida (nunca
+     * houve, ou uma eleicao anterior ficou sem anuncio), faz uma eleicao. Se a lider nao
+     * responder dentro do timeout - ou responder que ja nao se considera lider, o que
+     * acontece quando ela reiniciou e esta no meio da propria eleicao -, esquece a lider
+     * antiga e faz uma eleicao.
+     */
+    public void verificarLider() {
+        int lider = liderAtual.get();
+        if (lider == SEM_LIDER) {
+            iniciarEleicao();
+            return;
+        }
+        if (lider == idAgencia) {
+            return; // eu sou a lider, nada a verificar
+        }
+
+        Optional<LiderResponse> resposta = cliente.consultarLider(url(lider));
+        String motivo;
+        if (resposta.isEmpty()) {
+            motivo = "sem resposta em " + propriedades.timeout().toMillis() + " ms";
+        } else if (!Integer.valueOf(lider).equals(resposta.get().liderAtual())) {
+            motivo = "respondeu, mas nao se considera lider (liderAtual=" + resposta.get().liderAtual() + ")";
+        } else {
+            return; // a lider respondeu e confirma: tudo certo
+        }
+
+        // So esquece a lider se ninguem trocou a lider enquanto a consulta estava em curso.
+        if (liderAtual.compareAndSet(lider, SEM_LIDER)) {
+            registro.registrar("LIDER_NAO_RESPONDEU", relogio.eventoLocal(), ContaService.detalhes(
+                    "liderAtual", lider, "agencia", idAgencia, "motivo", motivo));
+            iniciarEleicao();
+        }
+    }
+
+    /**
+     * Agenda {@link #verificarLider()} a cada {@code intervaloMs}. Com atraso fixo (e nao taxa
+     * fixa): a proxima verificacao so comeca {@code intervaloMs} depois de a anterior terminar,
+     * entao uma verificacao lenta (timeout + eleicao) nunca se sobrepoe a seguinte - o que o
+     * setInterval do Node permitiria.
+     */
+    public void iniciarHeartbeat(long intervaloMs) {
+        heartbeat.scheduleWithFixedDelay(this::verificarLiderSemDerrubarOAgendamento,
+                intervaloMs, intervaloMs, TimeUnit.MILLISECONDS);
+    }
+
+    // Uma excecao dentro de uma tarefa agendada cancela as execucoes seguintes em silencio.
+    private void verificarLiderSemDerrubarOAgendamento() {
+        try {
+            verificarLider();
+        } catch (RuntimeException erro) {
+            log.warn("Falha no heartbeat: {}", erro.toString());
+        }
+    }
+
     public LiderResponse obterLiderAtual() {
         return new LiderResponse(idAgencia, liderOuNulo(), eleicaoEmAndamento.get(), Instant.now().toString());
     }
@@ -187,6 +250,7 @@ public class BullyService {
 
     @PreDestroy
     public void encerrar() throws InterruptedException {
+        heartbeat.shutdownNow();
         eleicoes.shutdownNow();
         eleicoes.awaitTermination(2, TimeUnit.SECONDS);
     }

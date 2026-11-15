@@ -82,6 +82,6 @@ foreach ($linha in $linhas) {
   $y += $alturaLinha
 }
 
-$destino = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $Saida))
+$destino = if ([System.IO.Path]::IsPathRooted($Saida)) { $Saida } else { [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $Saida)) }
 $imagem.Save($destino, [System.Drawing.Imaging.ImageFormat]::Png)
 Write-Output "$Saida  (${largura}x${altura})"

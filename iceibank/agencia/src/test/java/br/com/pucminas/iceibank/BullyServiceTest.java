@@ -159,6 +159,60 @@ class BullyServiceTest {
         assertThat(recebida.timestampVetorial()[1]).isPositive();
     }
 
+    @Test
+    void heartbeatDetectaAQuedaDaLiderEReelegeSemIntervencao() throws Exception {
+        subir(0);
+        subir(1);
+        subir(2);
+        agencias.get(0).iniciarEleicao();
+        esperar(() -> Integer.valueOf(2).equals(lider(0)) && Integer.valueOf(2).equals(lider(1)),
+                "a lider inicial ser a 2");
+
+        rede.derrubar(2);
+        agencias.get(0).verificarLider();
+        agencias.get(1).verificarLider();
+
+        esperar(() -> Integer.valueOf(1).equals(lider(0)) && Integer.valueOf(1).equals(lider(1)),
+                "a 0 e a 1 elegerem a 1 depois da queda da 2");
+        assertThat(contar(0, "LIDER_NAO_RESPONDEU") + contar(1, "LIDER_NAO_RESPONDEU")).isPositive();
+    }
+
+    @Test
+    void heartbeatComALiderRespondendoNaoMexeEmNada() throws Exception {
+        subir(0);
+        subir(1);
+        agencias.get(0).iniciarEleicao();
+        esperar(() -> Integer.valueOf(1).equals(lider(0)), "a lider ser a 1");
+        long eleicoesAntes = contar(0, "ELEICAO_INICIADA");
+
+        agencias.get(0).verificarLider();
+
+        assertThat(lider(0)).isEqualTo(1);
+        assertThat(contar(0, "ELEICAO_INICIADA")).isEqualTo(eleicoesAntes);
+        assertThat(contar(0, "LIDER_NAO_RESPONDEU")).isZero();
+    }
+
+    @Test
+    void heartbeatSemLiderConhecidaFazUmaEleicao() throws Exception {
+        subir(0);
+        subir(1);
+
+        agencias.get(0).verificarLider();
+
+        esperar(() -> Integer.valueOf(1).equals(lider(0)), "a 0 descobrir a lider pelo heartbeat");
+    }
+
+    @Test
+    void heartbeatEmQuemEALiderNaoConsultaNinguem() throws Exception {
+        subir(0);
+        agencias.get(0).iniciarEleicao();
+        rede.derrubar(0); // nem ela mesma responderia - e nao deve precisar
+
+        agencias.get(0).verificarLider();
+
+        assertThat(lider(0)).isEqualTo(0);
+    }
+
     /** Rede de mentira: entrega a chamada direto ao servico da agencia de destino. */
     static class RedeEmMemoria implements ClienteBully {
         private final Map<Integer, BullyService> ligadas = new ConcurrentHashMap<>();

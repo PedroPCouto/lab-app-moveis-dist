@@ -101,11 +101,17 @@ function LimparLogs {
 function SubirProcesso([int]$id) {
   if (-not (Test-Path $JAR)) { throw "Jar nao encontrado: $JAR. Rode: cd agencia; .\mvnw package -DskipTests" }
   New-Item -ItemType Directory -Force -Path $DADOS | Out-Null
+  # As variaveis vao pelo ambiente (herdado), nunca pela linha de comando: a RABBITMQ_URL
+  # tem senha e apareceria na lista de processos.
   $env:AGENCIA_ID = "$id"
   $env:RABBITMQ_URL = RabbitUrl
-  Start-Process -FilePath (Java) -ArgumentList '-jar', "`"$JAR`"" -WorkingDirectory $DIR_AGENCIA `
-    -RedirectStandardOutput (Join-Path $DADOS "agencia-$id.out") `
-    -RedirectStandardError (Join-Path $DADOS "agencia-$id.err") -WindowStyle Hidden | Out-Null
+  # cmd /c faz o redirecionamento para arquivo. Sem -RedirectStandard* o Start-Process usa
+  # ShellExecute, e o java nao herda os handles deste PowerShell - senao quem chamou o
+  # script (um pipe, um "*> arquivo") ficaria esperando ate as agencias serem derrubadas.
+  $saida = Join-Path $DADOS "agencia-$id.out"
+  $erros = Join-Path $DADOS "agencia-$id.err"
+  $linha = "/c `"`"$(Java)`" -jar `"$JAR`" >> `"$saida`" 2>> `"$erros`"`""
+  Start-Process -FilePath 'cmd.exe' -ArgumentList $linha -WorkingDirectory $DIR_AGENCIA -WindowStyle Hidden | Out-Null
 }
 
 function Subir([int[]]$ids) {
