@@ -1,5 +1,6 @@
 package br.com.pucminas.iceibank.exception;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,19 @@ public class TratadorDeErros {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> tratarApi(ApiException e) {
         return ResponseEntity.status(e.getStatus()).body(Map.of("erro", e.getMessage()));
+    }
+
+    // Sprint 3, Parte E: o 409 da sincronizacao leva os dois vetores e o estado real da conta,
+    // para o app decidir o que fazer (secao 9.3).
+    @ExceptionHandler(ConflitoSincronizacaoException.class)
+    public ResponseEntity<Map<String, Object>> tratarConflitoSincronizacao(ConflitoSincronizacaoException e) {
+        Map<String, Object> corpo = new LinkedHashMap<>();
+        corpo.put("erro", e.getMessage());
+        corpo.put("relacao", e.getRelacao());
+        corpo.put("vetorConhecido", e.getVetorConhecido());
+        corpo.put("vetorAtual", e.getVetorAtual());
+        corpo.put("contaAtual", e.getContaAtual());
+        return ResponseEntity.status(e.getStatus()).body(corpo);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

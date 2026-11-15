@@ -1,6 +1,7 @@
 package br.com.pucminas.iceibank.service;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,7 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 import br.com.pucminas.iceibank.config.AgenciaConfig;
+import br.com.pucminas.iceibank.dto.ContaComVetor;
 import br.com.pucminas.iceibank.exception.ApiException;
+import br.com.pucminas.iceibank.exception.ConflitoSincronizacaoException;
 import br.com.pucminas.iceibank.model.Autenticacao;
 import br.com.pucminas.iceibank.model.Conta;
 import br.com.pucminas.iceibank.model.Evento;
@@ -95,6 +98,82 @@ public class ContaService {
                     "id", id, "valor", valor, "novoSaldo", conta.getSaldo()));
         }
         return conta;
+    }
+
+    // ---- Sprint 3, Parte E: sincronizacao offline-first -------------------------------
+
+    /**
+     * Saldo e vetor lidos juntos, com a conta travada: toda operacao que muda o saldo desta
+     * conta incrementa o vetor sob a mesma trava, entao o par nunca mistura "saldo de antes"
+     * com "vetor de depois" (ou vice-versa) para esta conta.
+     */
+    public ContaComVetor comVetor(Conta conta) {
+        synchronized (conta) {
+            return ContaComVetor.de(conta, relogio.valorAtual());
+        }
+    }
+
+    public List<ContaComVetor> contasDoUsuarioComVetor(Autenticacao auth) {
+        return contasDoUsuario(auth).stream().map(this::comVetor).toList();
+    }
+
+    /**
+     * Compara o vetor que o app conhecia com o vetor atual da agencia (secao 9.3). Qualquer
+     * relacao diferente de IGUAIS e conflito. Deve ser chamado com a conta travada.
+     */
+    public void verificarVetor(Conta conta, int[] vetorConhecido) {
+        validarTamanho(vetorConhecido);
+        int[] atual = relogio.valorAtual();
+        RelogioVetorial.Relacao relacao = RelogioVetorial.comparar(vetorConhecido, atual);
+        if (relacao != RelogioVetorial.Relacao.IGUAIS) {
+            throw new ConflitoSincronizacaoException(vetorConhecido, atual, relacao, comVetor(conta));
+        }
+    }
+
+    /**
+     * O evento local da operacao sincronizada, so se nada aconteceu na agencia desde a
+     * {@link #verificarVetor} (compare-and-increment no relogio). Com a conta travada.
+     */
+    public int[] eventoLocalSeNadaMudou(Conta conta, int[] vetorConhecido) {
+        return relogio.eventoLocalSeIgual(vetorConhecido).orElseThrow(() -> {
+            int[] atual = relogio.valorAtual();
+            return new ConflitoSincronizacaoException(vetorConhecido, atual,
+                    RelogioVetorial.comparar(vetorConhecido, atual), comVetor(conta));
+        });
+    }
+
+    /**
+     * Deposito ou saque feito offline pelo app. Ordem das verificacoes: conflito primeiro
+     * (se o estado mudou, nem o saldo que o app viu vale mais), depois saldo suficiente.
+     * Devolve o saldo e o vetor exatamente do instante da operacao.
+     */
+    public ContaComVetor aplicarSincronizado(Conta conta, String tipo, BigDecimal valor, int[] vetorConhecido,
+                                             String idOperacao) {
+        synchronized (conta) {
+            verificarVetor(conta, vetorConhecido);
+            boolean deposito = "DEPOSITO".equals(tipo);
+            if (!deposito && !conta.temSaldo(valor)) {
+                throw ApiException.requisicaoInvalida("Saldo insuficiente.");
+            }
+            int[] ts = eventoLocalSeNadaMudou(conta, vetorConhecido);
+            if (deposito) {
+                conta.creditar(valor);
+            } else {
+                conta.debitar(valor);
+            }
+            registro.registrar("SINCRONIZACAO_OFFLINE", ts, detalhes(
+                    "id", conta.getId(), "tipo", tipo, "valor", valor, "idOperacao", idOperacao,
+                    "vetorConhecido", Arrays.stream(vetorConhecido).boxed().toList(),
+                    "novoSaldo", conta.getSaldo()));
+            return ContaComVetor.de(conta, ts);
+        }
+    }
+
+    private void validarTamanho(int[] vetor) {
+        if (vetor == null || vetor.length != AgenciaConfig.NUMERO_AGENCIAS) {
+            throw ApiException.requisicaoInvalida("vetorConhecido deve ter " + AgenciaConfig.NUMERO_AGENCIAS
+                    + " posicoes (uma por agencia).");
+        }
     }
 
     public List<Evento> historico(int id, int limite) {

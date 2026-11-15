@@ -115,6 +115,44 @@ class ApiIntegracaoTest {
     }
 
     @Test
+    void bullyLiderEPublicoEMostraLiderNulaSemEleicao() throws Exception {
+        mockMvc.perform(get("/bully/lider"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idAgencia").value(0))
+                .andExpect(jsonPath("$.liderAtual").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void sincronizacaoComVetorVelhoDevolve409ComOsDoisVetoresEAConta() throws Exception {
+        String token = autenticar("ana", "ana123");
+        String bearer = "Bearer " + token;
+        mockMvc.perform(post("/contas").header(HttpHeaders.AUTHORIZATION, bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":12,\"nomeAluno\":\"Ana\",\"saldoInicial\":100}"))
+                .andExpect(status().isCreated());
+
+        String conta = mockMvc.perform(get("/contas/12").header(HttpHeaders.AUTHORIZATION, bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vetorAtual").isArray())
+                .andReturn().getResponse().getContentAsString();
+        java.util.List<Integer> vetorAntigo = JsonPath.read(conta, "$.vetorAtual");
+
+        mockMvc.perform(post("/contas/12/depositar").header(HttpHeaders.AUTHORIZATION, bearer)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"valor\":50}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/contas/12/sincronizar").header(HttpHeaders.AUTHORIZATION, bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idOperacao\":\"t1\",\"tipo\":\"SAQUE\",\"valor\":30,\"vetorConhecido\":"
+                                + vetorAntigo + "}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.erro").exists())
+                .andExpect(jsonPath("$.vetorConhecido").isArray())
+                .andExpect(jsonPath("$.vetorAtual").isArray())
+                .andExpect(jsonPath("$.contaAtual.saldo").value(150.00));
+    }
+
+    @Test
     void rotaInexistenteSemTokenTambemRetorna401() throws Exception {
         mockMvc.perform(post("/contas/0/creditar-remoto")
                         .contentType(MediaType.APPLICATION_JSON)

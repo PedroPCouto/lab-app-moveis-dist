@@ -45,7 +45,16 @@ function Url([int]$id) { "http://localhost:$(4000 + $OFFSET + $id)" }
 
 function Diga([string]$texto = '') {
   Write-Host $texto
-  foreach ($l in ($texto -split "`r?`n")) { $script:linhas.Add($l) }
+  foreach ($l in ($texto -split "`r?`n")) {
+    # Quebra linhas longas (JSON) depois de uma virgula, para o print nao ficar com 2000 px.
+    while ($l.Length -gt 130) {
+      $corte = $l.LastIndexOf(',', 130)
+      if ($corte -lt 40) { break }
+      $script:linhas.Add($l.Substring(0, $corte + 1))
+      $l = '        ' + $l.Substring($corte + 1)
+    }
+    $script:linhas.Add($l)
+  }
 }
 
 function Comando([string]$texto) { Diga "PS> $texto" }
@@ -231,22 +240,30 @@ function ParteHistorico {
   foreach ($l in $saida) { Diga "$l" }
 }
 
+# Invoke-WebRequest (e nao Invoke-RestMethod) para ter o status HTTP e o corpo cru da resposta,
+# inclusive nos erros: no PowerShell 5.1 o corpo de um 409 so sai lendo o stream da excecao.
 function Requisitar([string]$metodo, [string]$url, $corpo, [string]$token) {
   $cabecalhos = @{}
   if ($token) { $cabecalhos['Authorization'] = "Bearer $token" }
-  $parametros = @{ Method = $metodo; Uri = $url; Headers = $cabecalhos; ContentType = 'application/json' }
+  $parametros = @{ Method = $metodo; Uri = $url; Headers = $cabecalhos; ContentType = 'application/json'; UseBasicParsing = $true }
   if ($null -ne $corpo) { $parametros['Body'] = (Json $corpo) }
   try {
-    $r = Invoke-RestMethod @parametros
-    return [pscustomobject]@{ Status = 200; Corpo = $r }
+    $r = Invoke-WebRequest @parametros
+    $status = [int]$r.StatusCode
+    $texto = $r.Content
   } catch {
     $status = 0
-    if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
-    $texto = $_.ErrorDetails.Message
-    $obj = $null
-    if ($texto) { try { $obj = $texto | ConvertFrom-Json } catch { $obj = $texto } }
-    return [pscustomobject]@{ Status = $status; Corpo = $obj }
+    $texto = ''
+    $resposta = $_.Exception.Response
+    if ($resposta) {
+      $status = [int]$resposta.StatusCode
+      $leitor = New-Object System.IO.StreamReader($resposta.GetResponseStream(), [System.Text.Encoding]::UTF8)
+      $texto = $leitor.ReadToEnd()
+    }
   }
+  $obj = $null
+  if ($texto) { try { $obj = $texto | ConvertFrom-Json } catch { $obj = $texto } }
+  return [pscustomobject]@{ Status = $status; Corpo = $obj; Texto = $texto }
 }
 
 function ParteConflito {
@@ -260,25 +277,25 @@ function ParteConflito {
   Diga "token (JWT) obtido para $($login.Corpo.usuario), valido por $($login.Corpo.expiraEmSegundos) s"
   $r = Requisitar 'POST' "$base/contas" @{ id = 30; nomeAluno = 'Ana (Sprint 3)'; saldoInicial = 100 } $token
   Comando "Invoke-RestMethod -Method Post -Uri $base/contas -Body '{`"id`":30,`"saldoInicial`":100}'"
-  Diga "HTTP $($r.Status) $(Json $r.Corpo)"
+  Diga "HTTP $($r.Status) $($r.Texto)"
   Diga ''
   Diga '>>> 1. Consulta de saldo: agora a resposta traz o vetorAtual da agencia'
   Comando "Invoke-RestMethod -Uri $base/contas/30 -Headers @{Authorization=`"Bearer `$token`"}"
   $r = Requisitar 'GET' "$base/contas/30" $null $token
-  Diga "HTTP $($r.Status) $(Json $r.Corpo)"
+  Diga "HTTP $($r.Status) $($r.Texto)"
   $vetorAntigo = @($r.Corpo.vetorAtual)
   Comando "`$vetorAntigo = `$conta.vetorAtual    # = [$($vetorAntigo -join ',')] - o que o app guardaria"
   Diga ''
   Diga '>>> 2. Enquanto o "app" esta offline, o saldo muda por outro caminho (deposito direto)'
   Comando "Invoke-RestMethod -Method Post -Uri $base/contas/30/depositar -Body '{`"valor`":50}'"
   $r = Requisitar 'POST' "$base/contas/30/depositar" @{ valor = 50 } $token
-  Diga "HTTP $($r.Status) $(Json $r.Corpo)"
+  Diga "HTTP $($r.Status) $($r.Texto)"
   Diga ''
   Diga '>>> 3. O app reconecta e tenta sincronizar um saque de 30 feito offline, com o vetor ANTIGO'
   $pendente = @{ idOperacao = 'demo-' + [guid]::NewGuid().ToString().Substring(0, 8); tipo = 'SAQUE'; valor = 30; vetorConhecido = $vetorAntigo }
   Comando "Invoke-RestMethod -Method Post -Uri $base/contas/30/sincronizar -Body '$(Json $pendente)'"
   $r = Requisitar 'POST' "$base/contas/30/sincronizar" $pendente $token
-  Diga "HTTP $($r.Status) $(Json $r.Corpo)"
+  Diga "HTTP $($r.Status) $($r.Texto)"
   if ($r.Status -eq 409) { Diga '>>> 409: conflito detectado - a agencia NAO aplicou o saque as cegas.' }
   $vetorNovo = @($r.Corpo.vetorAtual)
   Diga ''
@@ -287,7 +304,7 @@ function ParteConflito {
   $pendente.idOperacao = 'demo-' + [guid]::NewGuid().ToString().Substring(0, 8)
   Comando "Invoke-RestMethod -Method Post -Uri $base/contas/30/sincronizar -Body '$(Json $pendente)'"
   $r = Requisitar 'POST' "$base/contas/30/sincronizar" $pendente $token
-  Diga "HTTP $($r.Status) $(Json $r.Corpo)"
+  Diga "HTTP $($r.Status) $($r.Texto)"
   if ($r.Status -eq 200) { Diga ">>> Aplicada: saldo final $($r.Corpo.conta.saldo) (100 + 50 - 30)." }
 }
 

@@ -1,0 +1,31 @@
+=== Parte E - sincronizacao offline-first: deteccao de conflito via relogio vetorial ===
+PS> Get-Date
+domingo, 15 de novembro de 2026 16:12:43
+PS> $login = Invoke-RestMethod -Method Post -Uri http://localhost:4000/auth/login -Body '{"usuario":"ana","senha":"***"}'
+token (JWT) obtido para ana, valido por 1800 s
+PS> Invoke-RestMethod -Method Post -Uri http://localhost:4000/contas -Body '{"id":30,"saldoInicial":100}'
+HTTP 201 {"id":30,"nomeAluno":"Ana (Sprint 3)","dono":"ana","saldo":100.00,"vetorAtual":[40,49,79]}
+
+>>> 1. Consulta de saldo: agora a resposta traz o vetorAtual da agencia
+PS> Invoke-RestMethod -Uri http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $token"}
+HTTP 200 {"id":30,"nomeAluno":"Ana (Sprint 3)","dono":"ana","saldo":100.00,"vetorAtual":[40,49,79]}
+PS> $vetorAntigo = $conta.vetorAtual    # = [40,49,79] - o que o app guardaria
+
+>>> 2. Enquanto o "app" esta offline, o saldo muda por outro caminho (deposito direto)
+PS> Invoke-RestMethod -Method Post -Uri http://localhost:4000/contas/30/depositar -Body '{"valor":50}'
+HTTP 200 {"id":30,"nomeAluno":"Ana (Sprint 3)","dono":"ana","saldo":150.00,"vetorAtual":[41,49,79]}
+
+>>> 3. O app reconecta e tenta sincronizar um saque de 30 feito offline, com o vetor ANTIGO
+PS> Invoke-RestMethod -Method Post -Uri http://localhost:4000/contas/30/sincronizar -Body '{"valor":30,"vetorConhecido":[40,49,79],
+        "tipo":"SAQUE","idOperacao":"demo-5ec5ba75"}'
+HTTP 409 {"erro":"Conflito detectado: o estado da conta mudou desde a ultima sincronizacao do app.","relacao":"ANTES",
+        "vetorConhecido":[40,49,79],"vetorAtual":[41,49,79],"contaAtual":{"id":30,"nomeAluno":"Ana (Sprint 3)","dono":"ana",
+        "saldo":150.00,"vetorAtual":[41,49,79]}}
+>>> 409: conflito detectado - a agencia NAO aplicou o saque as cegas.
+
+>>> 4. Nova tentativa, agora com o vetorAtual devolvido na resposta de conflito
+PS> Invoke-RestMethod -Method Post -Uri http://localhost:4000/contas/30/sincronizar -Body '{"valor":30,"vetorConhecido":[41,49,79],
+        "tipo":"SAQUE","idOperacao":"demo-b623de96"}'
+HTTP 200 {"mensagem":"Operacao offline aplicada.","idOperacao":"demo-b623de96","tipo":"SAQUE","duplicada":false,"conta":{"id":30,
+        "nomeAluno":"Ana (Sprint 3)","dono":"ana","saldo":120.00,"vetorAtual":[42,49,79]}}
+>>> Aplicada: saldo final 120.00 (100 + 50 - 30).

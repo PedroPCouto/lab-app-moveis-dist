@@ -1,6 +1,7 @@
 package br.com.pucminas.iceibank.service;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,6 +54,25 @@ public class RelogioVetorial {
 
     public synchronized int[] valorAtual() {
         return vetor.clone();
+    }
+
+    // Sprint 3, secao 9.1: le o vetor sem incrementa-lo (mesmo papel do valorAtual()).
+    public int[] obterVetorAtual() {
+        return valorAtual();
+    }
+
+    /**
+     * Sprint 3, Parte E: evento local SO SE o vetor ainda for exatamente {@code esperado} -
+     * um compare-and-increment. Comparar e incrementar sob a mesma trava garante que nenhum
+     * outro evento da agencia entra entre a verificacao de conflito e a aplicacao da operacao
+     * sincronizada. Vazio = o vetor mudou (conflito).
+     */
+    public synchronized Optional<int[]> eventoLocalSeIgual(int[] esperado) {
+        if (esperado == null || !Arrays.equals(vetor, esperado)) {
+            return Optional.empty();
+        }
+        vetor[idAgencia] += 1;
+        return Optional.of(vetor.clone());
     }
 
     synchronized void restaurar(int[] vetorSalvo) {

@@ -39,6 +39,17 @@ public class TransferenciaService {
     }
 
     public TransferenciaResponse transferir(int idOrigem, int idDestino, BigDecimal valor, Autenticacao auth) {
+        return transferir(idOrigem, idDestino, valor, auth, null);
+    }
+
+    /**
+     * Sprint 3, Parte E: com {@code vetorConhecido} diferente de null, e uma transferencia
+     * feita offline pelo app sendo sincronizada. O debito so acontece se o vetor da agencia
+     * ainda for o que o app conhecia (mesma regra do deposito/saque sincronizado); o resto
+     * - credito local ou publicacao no RabbitMQ - e igual a uma transferencia online.
+     */
+    public TransferenciaResponse transferir(int idOrigem, int idDestino, BigDecimal valor, Autenticacao auth,
+                                            int[] vetorConhecido) {
         if (idOrigem == idDestino) {
             throw ApiException.requisicaoInvalida("Conta de origem e destino sao a mesma.");
         }
@@ -55,14 +66,23 @@ public class TransferenciaService {
         String idTransferencia = UUID.randomUUID().toString();
 
         synchronized (contaOrigem) {
+            if (vetorConhecido != null) {
+                contaService.verificarVetor(contaOrigem, vetorConhecido);
+            }
             if (!contaOrigem.temSaldo(valor)) {
                 throw ApiException.requisicaoInvalida("Saldo insuficiente.");
             }
-            int[] tsDebito = relogio.eventoLocal();
+            int[] tsDebito = vetorConhecido == null
+                    ? relogio.eventoLocal()
+                    : contaService.eventoLocalSeNadaMudou(contaOrigem, vetorConhecido);
             contaOrigem.debitar(valor);
-            registro.registrar("TRANSFERENCIA_DEBITO", tsDebito, ContaService.detalhes(
+            var detalhes = ContaService.detalhes(
                     "idTransferencia", idTransferencia, "idOrigem", idOrigem, "idDestino", idDestino,
-                    "valor", valor, "agenciaDestino", agenciaDestino, "novoSaldo", contaOrigem.getSaldo()));
+                    "valor", valor, "agenciaDestino", agenciaDestino, "novoSaldo", contaOrigem.getSaldo());
+            if (vetorConhecido != null) {
+                detalhes.put("sincronizacaoOffline", true);
+            }
+            registro.registrar("TRANSFERENCIA_DEBITO", tsDebito, detalhes);
         }
 
         return mesmaAgencia
@@ -141,10 +161,9 @@ public class TransferenciaService {
      * em memoria antes de consumir a mensagem (cenario da Parte C).
      */
     public boolean creditarRemoto(MensagemCredito mensagem) {
-        int[] ts = relogio.aoReceber(mensagem.vetorEnvio());
-
         Optional<Conta> encontrada = contaService.procurar(mensagem.idConta());
         if (encontrada.isEmpty()) {
+            int[] ts = relogio.aoReceber(mensagem.vetorEnvio());
             registro.registrar("CREDITO_REMOTO_FALHOU", ts, ContaService.detalhes(
                     "idTransferencia", mensagem.idTransferencia(), "idConta", mensagem.idConta(),
                     "valor", mensagem.valor(), "origemAgencia", mensagem.origemAgencia(),
@@ -154,6 +173,9 @@ public class TransferenciaService {
 
         Conta conta = encontrada.get();
         synchronized (conta) {
+            // Sprint 3: o recebimento (que avanca o vetor) fica dentro da trava da conta, junto
+            // com o credito - assim um snapshot (saldo, vetor) da conta nunca ve um sem o outro.
+            int[] ts = relogio.aoReceber(mensagem.vetorEnvio());
             conta.creditar(mensagem.valor());
             registro.registrar("TRANSFERENCIA_CREDITO_REMOTO", ts, ContaService.detalhes(
                     "idTransferencia", mensagem.idTransferencia(), "idConta", mensagem.idConta(),
