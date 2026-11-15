@@ -24,6 +24,16 @@ class Armazenamento {
 
   static Future<Armazenamento> abrir() async {
     await Hive.initFlutter('iceibank');
+    return _abrirCaixas();
+  }
+
+  /// Para os testes: Hive numa pasta qualquer, sem path_provider.
+  static Future<Armazenamento> abrirEm(String pasta) async {
+    Hive.init(pasta);
+    return _abrirCaixas();
+  }
+
+  static Future<Armazenamento> _abrirCaixas() async {
     return Armazenamento._(
       await Hive.openBox<String>(_caixaSessao),
       await Hive.openBox<String>(_caixaContas),
@@ -53,12 +63,13 @@ class Armazenamento {
 
   String _chaveConta(String dono, int id) => '$dono:$id';
 
-  List<Conta> contas(String dono) => _contas.keys
-      .cast<String>()
-      .where((k) => k.startsWith('$dono:'))
-      .map((k) => Conta.doArmazenamento(_ler(_contas.get(k)!)))
-      .toList()
-    ..sort((a, b) => a.id.compareTo(b.id));
+  List<Conta> contas(String dono) =>
+      _contas.keys
+          .cast<String>()
+          .where((k) => k.startsWith('$dono:'))
+          .map((k) => Conta.doArmazenamento(_ler(_contas.get(k)!)))
+          .toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
 
   Conta? conta(String dono, int id) {
     final json = _contas.get(_chaveConta(dono, id));
@@ -70,14 +81,11 @@ class Armazenamento {
 
   // ---- fila de operacoes pendentes ----
 
-  List<OperacaoPendente> pendentes(String dono) => _pendentes.values
-      .map((j) => OperacaoPendente.doArmazenamento(_ler(j)))
-      .where((p) => p.dono == dono)
-      .toList()
-    ..sort((a, b) => a.ordem.compareTo(b.ordem));
+  List<OperacaoPendente> pendentes(String dono) =>
+      _pendentes.values.map((j) => OperacaoPendente.doArmazenamento(_ler(j))).where((p) => p.dono == dono).toList()
+        ..sort((a, b) => a.ordem.compareTo(b.ordem));
 
-  Future<void> salvarPendente(OperacaoPendente op) =>
-      _pendentes.put(op.idOperacao, jsonEncode(op.paraArmazenamento()));
+  Future<void> salvarPendente(OperacaoPendente op) => _pendentes.put(op.idOperacao, jsonEncode(op.paraArmazenamento()));
 
   Future<void> removerPendente(String idOperacao) => _pendentes.delete(idOperacao);
 

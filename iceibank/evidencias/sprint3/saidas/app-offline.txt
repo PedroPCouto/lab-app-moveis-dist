@@ -1,0 +1,10 @@
+PS> Get-Date
+
+domingo, 15 de novembro de 2026 16:32:36
+PS> Invoke-RestMethod http://localhost:4000/contas/30 -Headers @{Authorization="Bearer $env:TOKEN_ANA"} | Select-Object id, saldo, @{n='vetorAtual';e={$_.vetorAtual -join ','}} | Format-Table -AutoSize
+
+id  saldo vetorAtual
+--  ----- ----------
+30 200,50 21,17,22
+
+# a agencia ainda nao recebeu nada: saldo continua 200,50

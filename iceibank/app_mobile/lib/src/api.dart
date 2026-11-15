@@ -88,27 +88,39 @@ class ApiCliente {
   Future<Map<String, dynamic>> conta(int id) async =>
       await requisitar('GET', ConfigAgencias.agenciaResponsavel(id), '/contas/$id') as Map<String, dynamic>;
 
-  Future<Map<String, dynamic>> criarConta(int id, String nome, double saldoInicial) async =>
-      await requisitar('POST', ConfigAgencias.agenciaResponsavel(id), '/contas',
-          corpo: {'id': id, 'nomeAluno': nome, 'saldoInicial': saldoInicial}) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> criarConta(int id, String nome, double saldoInicial) async => await requisitar(
+    'POST',
+    ConfigAgencias.agenciaResponsavel(id),
+    '/contas',
+    corpo: {'id': id, 'nomeAluno': nome, 'saldoInicial': saldoInicial},
+  ) as Map<String, dynamic>;
 
-  Future<Map<String, dynamic>> depositar(int id, int centavos) async =>
-      await requisitar('POST', ConfigAgencias.agenciaResponsavel(id), '/contas/$id/depositar',
-          corpo: {'valor': centavos / 100}) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> depositar(int id, int centavos) async => await requisitar(
+    'POST',
+    ConfigAgencias.agenciaResponsavel(id),
+    '/contas/$id/depositar',
+    corpo: {'valor': centavos / 100},
+  ) as Map<String, dynamic>;
 
-  Future<Map<String, dynamic>> sacar(int id, int centavos) async =>
-      await requisitar('POST', ConfigAgencias.agenciaResponsavel(id), '/contas/$id/sacar',
-          corpo: {'valor': centavos / 100}) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> sacar(int id, int centavos) async => await requisitar(
+    'POST',
+    ConfigAgencias.agenciaResponsavel(id),
+    '/contas/$id/sacar',
+    corpo: {'valor': centavos / 100},
+  ) as Map<String, dynamic>;
 
   /// A transferencia vai para a agencia da conta de ORIGEM (e ela quem debita).
-  Future<Map<String, dynamic>> transferir(int origem, int destino, int centavos) async =>
-      await requisitar('POST', ConfigAgencias.agenciaResponsavel(origem), '/transferencias',
-          corpo: {'idOrigem': origem, 'idDestino': destino, 'valor': centavos / 100}) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> transferir(int origem, int destino, int centavos) async => await requisitar(
+    'POST',
+    ConfigAgencias.agenciaResponsavel(origem),
+    '/transferencias',
+    corpo: {'idOrigem': origem, 'idDestino': destino, 'valor': centavos / 100},
+  ) as Map<String, dynamic>;
 
   /// Parte E: `POST /contas/{id}/sincronizar`.
   Future<Map<String, dynamic>> sincronizar(int idConta, Map<String, dynamic> corpo) async =>
-      await requisitar('POST', ConfigAgencias.agenciaResponsavel(idConta), '/contas/$idConta/sincronizar',
-          corpo: corpo) as Map<String, dynamic>;
+      await requisitar('POST', ConfigAgencias.agenciaResponsavel(idConta), '/contas/$idConta/sincronizar', corpo: corpo)
+          as Map<String, dynamic>;
 
   /// Parte D: `GET /bully/lider` (publica, sem token).
   Future<Map<String, dynamic>> lider(int agencia) async =>

@@ -95,7 +95,9 @@ class _TelaLoginState extends State<TelaLogin> {
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: const Text('Servidor das agencias'),
-                    subtitle: Text('${_host.text}:${widget.banco.api.config.porta(0)}-${widget.banco.api.config.porta(2)}'),
+                    subtitle: Text(
+                      '${_host.text}:${widget.banco.api.config.porta(0)}-${widget.banco.api.config.porta(2)}',
+                    ),
                     children: [
                       TextField(
                         controller: _host,

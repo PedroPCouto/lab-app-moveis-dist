@@ -23,7 +23,8 @@ class PainelLider extends StatelessWidget {
         final IconData icone;
         if (lideranca.semResposta) {
           titulo = lider == null ? 'Lider desconhecida' : 'Agencia $lider (ultima conhecida)';
-          detalhe = 'Nenhuma agencia respondeu agora (tentadas: ${lideranca.tentadasNaUltimaConsulta.join(', ')}).'
+          detalhe =
+              'Nenhuma agencia respondeu agora (tentadas: ${lideranca.tentadasNaUltimaConsulta.join(', ')}).'
               '${lideranca.atualizadaEm == null ? '' : ' Ultima confirmacao as ${hora(lideranca.atualizadaEm!)}.'}';
           cor = tema.colorScheme.error;
           icone = Icons.cloud_off;

@@ -6,6 +6,7 @@ import 'src/api.dart';
 import 'src/app.dart';
 import 'src/armazenamento.dart';
 import 'src/banco.dart';
+import 'src/conectividade.dart';
 import 'src/config.dart';
 import 'src/lideranca.dart';
 
@@ -20,8 +21,12 @@ Future<void> main() async {
   final armazenamento = await Armazenamento.abrir();
   final config = ConfigAgencias.padrao();
   final api = ApiCliente(config.comHost(armazenamento.lerHost() ?? config.host));
-  final banco = Banco(api, armazenamento);
+  final conectividade = Conectividade();
+  await conectividade.iniciar();
+  final banco = Banco(api, armazenamento, conectividade);
   final lideranca = Lideranca(api, armazenamento);
+  // rede de volta: o painel da lider tambem nao espera o proximo ciclo de 3 s
+  conectividade.aoReconectar(lideranca.consultar);
 
   runApp(IceibankApp(banco: banco, lideranca: lideranca));
 }

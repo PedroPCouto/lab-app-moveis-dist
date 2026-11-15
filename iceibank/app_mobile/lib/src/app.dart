@@ -16,17 +16,13 @@ class IceibankApp extends StatelessWidget {
     return MaterialApp(
       title: 'ICEIBank',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F4E8C)),
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F4E8C)), useMaterial3: true),
       // Sem sessao -> login; com sessao -> tela inicial. Um 401 em qualquer ponto chama
       // banco.sair(), e esta troca acontece sozinha.
       home: ListenableBuilder(
         listenable: banco,
-        builder: (context, _) => banco.autenticado
-            ? TelaInicio(banco: banco, lideranca: lideranca)
-            : TelaLogin(banco: banco),
+        builder: (context, _) =>
+            banco.autenticado ? TelaInicio(banco: banco, lideranca: lideranca) : TelaLogin(banco: banco),
       ),
     );
   }

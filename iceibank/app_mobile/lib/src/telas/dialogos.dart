@@ -78,8 +78,8 @@ Future<DadosOperacao?> pedirOperacao(BuildContext context, TipoOperacao tipo, Co
 
 String _escopo(int origem, int destino) =>
     ConfigAgencias.agenciaResponsavel(origem) == ConfigAgencias.agenciaResponsavel(destino)
-        ? 'Mesma agencia (${ConfigAgencias.agenciaResponsavel(destino)}): credito imediato'
-        : 'Outra agencia (${ConfigAgencias.agenciaResponsavel(destino)}): credito via RabbitMQ';
+    ? 'Mesma agencia (${ConfigAgencias.agenciaResponsavel(destino)}): credito imediato'
+    : 'Outra agencia (${ConfigAgencias.agenciaResponsavel(destino)}): credito via RabbitMQ';
 
 class DadosNovaConta {
   final int id;
@@ -113,7 +113,10 @@ Future<DadosNovaConta?> pedirNovaConta(BuildContext context, String nomePadrao) 
               ),
               onChanged: (_) => setState(() {}),
             ),
-            TextField(controller: nome, decoration: const InputDecoration(labelText: 'Nome do titular')),
+            TextField(
+              controller: nome,
+              decoration: const InputDecoration(labelText: 'Nome do titular'),
+            ),
             TextField(
               controller: saldo,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),

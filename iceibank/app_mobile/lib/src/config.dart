@@ -35,8 +35,7 @@ class ConfigAgencias {
 
   Uri url(int idAgencia, String caminho) => Uri.parse('http://$host:${porta(idAgencia)}$caminho');
 
-  static int agenciaResponsavel(int idConta) =>
-      ((idConta % numeroAgencias) + numeroAgencias) % numeroAgencias;
+  static int agenciaResponsavel(int idConta) => ((idConta % numeroAgencias) + numeroAgencias) % numeroAgencias;
 
   static List<int> get todasAsAgencias => List.generate(numeroAgencias, (i) => i);
 }

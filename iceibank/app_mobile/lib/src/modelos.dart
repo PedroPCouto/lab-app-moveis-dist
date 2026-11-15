@@ -58,47 +58,47 @@ class Conta {
   int get agencia => ConfigAgencias.agenciaResponsavel(id);
 
   factory Conta.daApi(Map<String, dynamic> json) => Conta(
-        id: (json['id'] as num).toInt(),
-        nomeAluno: (json['nomeAluno'] ?? '') as String,
-        dono: (json['dono'] ?? '') as String,
-        saldoCentavos: centavosDe(json['saldo'] as num),
-        vetorAtual: json['vetorAtual'] == null ? const [] : _vetor(json['vetorAtual']),
-        atualizadaEm: DateTime.now(),
-      );
+    id: (json['id'] as num).toInt(),
+    nomeAluno: (json['nomeAluno'] ?? '') as String,
+    dono: (json['dono'] ?? '') as String,
+    saldoCentavos: centavosDe(json['saldo'] as num),
+    vetorAtual: json['vetorAtual'] == null ? const [] : _vetor(json['vetorAtual']),
+    atualizadaEm: DateTime.now(),
+  );
 
   factory Conta.doArmazenamento(Map<String, dynamic> json) => Conta(
-        id: json['id'] as int,
-        nomeAluno: json['nomeAluno'] as String,
-        dono: json['dono'] as String,
-        saldoCentavos: json['saldoCentavos'] as int,
-        vetorAtual: _vetor(json['vetorAtual']),
-        atualizadaEm: DateTime.parse(json['atualizadaEm'] as String),
-      );
+    id: json['id'] as int,
+    nomeAluno: json['nomeAluno'] as String,
+    dono: json['dono'] as String,
+    saldoCentavos: json['saldoCentavos'] as int,
+    vetorAtual: _vetor(json['vetorAtual']),
+    atualizadaEm: DateTime.parse(json['atualizadaEm'] as String),
+  );
 
   Map<String, dynamic> paraArmazenamento() => {
-        'id': id,
-        'nomeAluno': nomeAluno,
-        'dono': dono,
-        'saldoCentavos': saldoCentavos,
-        'vetorAtual': vetorAtual,
-        'atualizadaEm': atualizadaEm.toIso8601String(),
-      };
+    'id': id,
+    'nomeAluno': nomeAluno,
+    'dono': dono,
+    'saldoCentavos': saldoCentavos,
+    'vetorAtual': vetorAtual,
+    'atualizadaEm': atualizadaEm.toIso8601String(),
+  };
 }
 
 enum TipoOperacao { deposito, saque, transferencia }
 
 extension TipoOperacaoApi on TipoOperacao {
   String get api => switch (this) {
-        TipoOperacao.deposito => 'DEPOSITO',
-        TipoOperacao.saque => 'SAQUE',
-        TipoOperacao.transferencia => 'TRANSFERENCIA',
-      };
+    TipoOperacao.deposito => 'DEPOSITO',
+    TipoOperacao.saque => 'SAQUE',
+    TipoOperacao.transferencia => 'TRANSFERENCIA',
+  };
 
   String get rotulo => switch (this) {
-        TipoOperacao.deposito => 'Deposito',
-        TipoOperacao.saque => 'Saque',
-        TipoOperacao.transferencia => 'Transferencia',
-      };
+    TipoOperacao.deposito => 'Deposito',
+    TipoOperacao.saque => 'Saque',
+    TipoOperacao.transferencia => 'Transferencia',
+  };
 
   /// Efeito no saldo da conta de origem.
   int sinal() => this == TipoOperacao.deposito ? 1 : -1;
@@ -173,66 +173,65 @@ class OperacaoPendente {
     int? saldoRealCentavos,
     List<int>? vetorAtualAgencia,
     String? idOperacao,
-  }) =>
-      OperacaoPendente(
-        idOperacao: idOperacao ?? this.idOperacao,
-        dono: dono,
-        tipo: tipo,
-        idConta: idConta,
-        idDestino: idDestino,
-        valorCentavos: valorCentavos,
-        vetorConhecido: vetorConhecido ?? this.vetorConhecido,
-        saldoVistoCentavos: saldoVistoCentavos ?? this.saldoVistoCentavos,
-        criadaEm: criadaEm,
-        ordem: ordem,
-        situacao: situacao ?? this.situacao,
-        mensagem: mensagem,
-        saldoRealCentavos: saldoRealCentavos ?? this.saldoRealCentavos,
-        vetorAtualAgencia: vetorAtualAgencia ?? this.vetorAtualAgencia,
-      );
+  }) => OperacaoPendente(
+    idOperacao: idOperacao ?? this.idOperacao,
+    dono: dono,
+    tipo: tipo,
+    idConta: idConta,
+    idDestino: idDestino,
+    valorCentavos: valorCentavos,
+    vetorConhecido: vetorConhecido ?? this.vetorConhecido,
+    saldoVistoCentavos: saldoVistoCentavos ?? this.saldoVistoCentavos,
+    criadaEm: criadaEm,
+    ordem: ordem,
+    situacao: situacao ?? this.situacao,
+    mensagem: mensagem,
+    saldoRealCentavos: saldoRealCentavos ?? this.saldoRealCentavos,
+    vetorAtualAgencia: vetorAtualAgencia ?? this.vetorAtualAgencia,
+  );
 
   Map<String, dynamic> paraApi(List<int> vetor) => {
-        'idOperacao': idOperacao,
-        'tipo': tipo.api,
-        'valor': valorCentavos / 100,
-        'vetorConhecido': vetor,
-        if (idDestino != null) 'idDestino': idDestino,
-        'criadaEm': criadaEm.toUtc().toIso8601String(),
-      };
+    'idOperacao': idOperacao,
+    'tipo': tipo.api,
+    'valor': valorCentavos / 100,
+    'vetorConhecido': vetor,
+    if (idDestino != null) 'idDestino': idDestino,
+    'criadaEm': criadaEm.toUtc().toIso8601String(),
+  };
 
   Map<String, dynamic> paraArmazenamento() => {
-        'idOperacao': idOperacao,
-        'dono': dono,
-        'tipo': tipo.name,
-        'idConta': idConta,
-        'idDestino': idDestino,
-        'valorCentavos': valorCentavos,
-        'vetorConhecido': vetorConhecido,
-        'saldoVistoCentavos': saldoVistoCentavos,
-        'criadaEm': criadaEm.toIso8601String(),
-        'ordem': ordem,
-        'situacao': situacao.name,
-        'mensagem': mensagem,
-        'saldoRealCentavos': saldoRealCentavos,
-        'vetorAtualAgencia': vetorAtualAgencia,
-      };
+    'idOperacao': idOperacao,
+    'dono': dono,
+    'tipo': tipo.name,
+    'idConta': idConta,
+    'idDestino': idDestino,
+    'valorCentavos': valorCentavos,
+    'vetorConhecido': vetorConhecido,
+    'saldoVistoCentavos': saldoVistoCentavos,
+    'criadaEm': criadaEm.toIso8601String(),
+    'ordem': ordem,
+    'situacao': situacao.name,
+    'mensagem': mensagem,
+    'saldoRealCentavos': saldoRealCentavos,
+    'vetorAtualAgencia': vetorAtualAgencia,
+  };
 
   factory OperacaoPendente.doArmazenamento(Map<String, dynamic> j) => OperacaoPendente(
-        idOperacao: j['idOperacao'] as String,
-        dono: j['dono'] as String,
-        tipo: TipoOperacao.values.byName(j['tipo'] as String),
-        idConta: j['idConta'] as int,
-        idDestino: j['idDestino'] as int?,
-        valorCentavos: j['valorCentavos'] as int,
-        vetorConhecido: _vetor(j['vetorConhecido']),
-        saldoVistoCentavos: j['saldoVistoCentavos'] as int,
-        criadaEm: DateTime.parse(j['criadaEm'] as String),
-        ordem: j['ordem'] as int,
-        situacao: SituacaoPendente.values.byName(j['situacao'] as String),
-        mensagem: j['mensagem'] as String?,
-        saldoRealCentavos: j['saldoRealCentavos'] as int?,
-        vetorAtualAgencia: j['vetorAtualAgencia'] == null ? null : _vetor(j['vetorAtualAgencia']),
-      );
+    idOperacao: j['idOperacao'] as String,
+    dono: j['dono'] as String,
+    tipo: TipoOperacao.values.byName(j['tipo'] as String),
+    idConta: j['idConta'] as int,
+    idDestino: j['idDestino'] as int?,
+    valorCentavos: j['valorCentavos'] as int,
+    vetorConhecido: _vetor(j['vetorConhecido']),
+    saldoVistoCentavos: j['saldoVistoCentavos'] as int,
+    criadaEm: DateTime.parse(j['criadaEm'] as String),
+    ordem: j['ordem'] as int,
+    situacao: SituacaoPendente.values.byName(j['situacao'] as String),
+    mensagem: j['mensagem'] as String?,
+    saldoRealCentavos: j['saldoRealCentavos'] as int?,
+    vetorAtualAgencia: j['vetorAtualAgencia'] == null ? null : _vetor(j['vetorAtualAgencia']),
+  );
 }
 
 class Sessao {
@@ -250,16 +249,21 @@ class Sessao {
     required this.host,
   });
 
-  Map<String, dynamic> paraArmazenamento() =>
-      {'token': token, 'usuario': usuario, 'nome': nome, 'agenciaEntrada': agenciaEntrada, 'host': host};
+  Map<String, dynamic> paraArmazenamento() => {
+    'token': token,
+    'usuario': usuario,
+    'nome': nome,
+    'agenciaEntrada': agenciaEntrada,
+    'host': host,
+  };
 
   factory Sessao.doArmazenamento(Map<String, dynamic> j) => Sessao(
-        token: j['token'] as String,
-        usuario: j['usuario'] as String,
-        nome: j['nome'] as String,
-        agenciaEntrada: j['agenciaEntrada'] as int,
-        host: j['host'] as String,
-      );
+    token: j['token'] as String,
+    usuario: j['usuario'] as String,
+    nome: j['nome'] as String,
+    agenciaEntrada: j['agenciaEntrada'] as int,
+    host: j['host'] as String,
+  );
 }
 
 /// Uma troca de lideranca observada pelo app (funcionalidade adicional).
@@ -271,13 +275,17 @@ class TrocaDeLider {
 
   const TrocaDeLider({required this.de, required this.para, required this.quando, required this.informadaPor});
 
-  Map<String, dynamic> paraArmazenamento() =>
-      {'de': de, 'para': para, 'quando': quando.toIso8601String(), 'informadaPor': informadaPor};
+  Map<String, dynamic> paraArmazenamento() => {
+    'de': de,
+    'para': para,
+    'quando': quando.toIso8601String(),
+    'informadaPor': informadaPor,
+  };
 
   factory TrocaDeLider.doArmazenamento(Map<String, dynamic> j) => TrocaDeLider(
-        de: j['de'] as int?,
-        para: j['para'] as int,
-        quando: DateTime.parse(j['quando'] as String),
-        informadaPor: j['informadaPor'] as int,
-      );
+    de: j['de'] as int?,
+    para: j['para'] as int,
+    quando: DateTime.parse(j['quando'] as String),
+    informadaPor: j['informadaPor'] as int,
+  );
 }

@@ -8,7 +8,7 @@ const path = require('path');
 const PASTA_EVIDENCIAS = path.resolve(__dirname, '..', '..', 'evidencias', 'sprint3');
 
 /** Executa os comandos num PowerShell de verdade e devolve o texto, com "PS> comando" antes de cada um. */
-function powershell(comandos) {
+function powershell(comandos, env = {}) {
   const partes = ['[Console]::OutputEncoding = [System.Text.Encoding]::UTF8', "$ProgressPreference = 'SilentlyContinue'"];
   for (const comando of comandos) {
     partes.push(`Write-Output ('PS> ' + '${comando.replace(/'/g, "''")}')`);
@@ -17,6 +17,7 @@ function powershell(comandos) {
   const saida = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', partes.join('; ')], {
     encoding: 'utf8',
     timeout: 60_000,
+    env: { ...process.env, ...env },
   });
   return saida.replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
 }
